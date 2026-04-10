@@ -1,8 +1,18 @@
 # ProxyCoach AI
 
-**ProxyCoach AI** is a production, multi-tenant AI fitness platform built for **10+ personal trainers** at the **Guelph YMCA**. The goal is to give each trainer their own AI-powered assistant that understands their **training philosophy**, **nutrition approach**, and **client needs**—not generic fitness advice.
+**ProxyCoach AI** is a **production** multi-tenant AI fitness platform in active use by **10+ personal trainers** at the **Guelph YMCA** and **50+ real users** (trainers and clients). It is not a demo or side project—the live product is depended on week to week for coaching workflows.
 
-The application is **live in production** with **50+ active users**.
+The goal is to give each trainer their own AI-powered assistant that understands their **training philosophy**, **nutrition approach**, and **client needs**—not generic fitness advice.
+
+---
+
+## Where it runs (production)
+
+**ProxyCoach AI runs in production on Microsoft Azure**, on the **same deployment model** as the prior production service: **Docker** images pushed to **Azure Container Registry (ACR)**, deployed to **Azure Web App for Containers**, with **GitHub Actions** handling build and release (including Prisma migrations against the production database).
+
+The **live application** is served over **HTTPS** at **`https://app.proxycoach.ai`** (illustrative production hostname for this deployment; custom domain and Azure default hostnames are configured in Azure as needed). Trainers and clients **do not** run the app locally; they use that hosted **Proxycoach** site in the browser, authenticated with **Microsoft Entra ID** (Azure AD).
+
+Changes to this repository flow through CI/CD into that environment—treat every merge to the deployment branches as affecting **real users**.
 
 ---
 
@@ -82,51 +92,27 @@ proxycoach-app/
 
 ---
 
-## Local development
+## Production configuration (Azure)
 
-Prerequisites: **Node.js** `>=20.19` (or supported 22.x / 24.x per `package.json` engines), **PostgreSQL**, and Azure-backed resources (or compatible dev substitutes) for auth, storage, and AI.
-
-```bash
-cd web-agents
-npm install --legacy-peer-deps
-# Create .env.local with DATABASE_URL, auth, storage, and AI-related variables (see below)
-npx prisma migrate deploy
-npx prisma generate
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-Production-like run:
-
-```bash
-npm run build
-npm start
-```
-
----
-
-## Configuration (environment variables)
-
-The app expects secrets and endpoints via environment variables. Typical groups:
+Secrets and integration endpoints are set as **environment variables / App Settings** on the Azure Web App (and related resources), not checked into git. Typical groups maintained by operators:
 
 - **Database** — `DATABASE_URL` (PostgreSQL)
-- **Auth (Microsoft Entra ID)** — `AUTH_MICROSOFT_ENTRA_ID_CLIENT_ID`, `AUTH_MICROSOFT_ENTRA_ID_CLIENT_SECRET`, `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID`, plus `AUTH_SECRET`, `AUTH_URL` / `NEXTAUTH_URL`
-- **Auto-register domains (optional)** — `ALLOWED_AUTO_REGISTER_DOMAINS` — comma-separated list of email domains whose users can sign in without an invitation (e.g. `guelphymca.ca,ymca.ca`). Leave unset to require invitations for all users except existing DB users handled elsewhere.
-- **Blob storage** — `AZURE_STORAGE_CONNECTION_STRING` or `AZURE_STORAGE_ACCOUNT_NAME` + `AZURE_STORAGE_ACCOUNT_KEY` (and optional container names)
-- **Chat / LLM** — e.g. `AZURE_BASICLLM_OPENAI_TARGET_URL`, `AZURE_BASICLLM_OPENAI_API_KEY`, `AZURE_BASICLLM_DEPLOYMENT_NAME` (see API routes under `src/app/api/`)
-- **Search / embeddings** — `SEARCH_ENDPOINT`, `SEARCH_API_KEY`, index names, Azure OpenAI embedding endpoint and keys (see `src/lib/azure-search.ts`)
+- **Auth (Microsoft Entra ID)** — `AUTH_MICROSOFT_ENTRA_ID_CLIENT_ID`, `AUTH_MICROSOFT_ENTRA_ID_CLIENT_SECRET`, `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID`, plus `AUTH_SECRET`, `AUTH_URL` / `NEXTAUTH_URL` (e.g. `https://app.proxycoach.ai` so OAuth redirects resolve correctly)
+- **Auto-register domains (optional)** — `ALLOWED_AUTO_REGISTER_DOMAINS` — comma-separated email domains whose users can sign in without an invitation (e.g. YMCA domains). Leave unset if all access should go through invitations.
+- **Blob storage** — `AZURE_STORAGE_CONNECTION_STRING` or account name + key (and optional container names)
+- **Chat / LLM** — e.g. `AZURE_BASICLLM_OPENAI_TARGET_URL`, `AZURE_BASICLLM_OPENAI_API_KEY`, `AZURE_BASICLLM_DEPLOYMENT_NAME` (see `web-agents/src/app/api/`)
+- **Search / embeddings** — `SEARCH_ENDPOINT`, `SEARCH_API_KEY`, index names, embedding endpoint and keys (see `web-agents/src/lib/azure-search.ts`)
 - **Telemetry (optional)** — `NEXT_PUBLIC_APPLICATIONINSIGHTS_CONNECTION_STRING`
 
-Concrete variable names and comments also appear next to usage in `web-agents/src`. For a starter template focused on storage and OpenAI, see `web-agents/README.md`.
+Variable names and behavior are also documented inline under `web-agents/src`.
 
 ---
 
 ## Operations notes
 
-- Run **Prisma migrations** (`prisma migrate deploy`) against the target database before or as part of deploys; CI already does this for configured environments.
-- **Auth redirect URIs** in Entra ID must match your deployed URL (e.g. `https://<host>/api/auth/callback/azure-ad`).
-- Scaling and cost are primarily driven by **OpenAI/search usage**, **search index size**, and **Blob** egress/storage.
+- **Production deploys** — Migrations run in CI before the new container is deployed; coordinate schema changes with downtime or backward-compatible steps when **50+ users** are live.
+- **Auth** — Entra app registration redirect URIs must include the production callback, e.g. `https://app.proxycoach.ai/api/auth/callback/azure-ad` (plus any real custom domain or Azure `*.azurewebsites.net` host you use in practice).
+- **Cost and capacity** — Driven by OpenAI/search usage, index size, and Blob traffic; monitor Azure spend and App Service metrics for the YMCA workload.
 
 ---
 

@@ -1,30 +1,13 @@
 # ProxyCoach AI — Web application
 
-This directory contains the **Next.js** application for [ProxyCoach AI](../README.md).
+This directory contains the **Next.js** source for [ProxyCoach AI](../README.md).
 
-## Quick start
+**Production** runs on **Azure** (Docker → ACR → Web App for Containers). End users hit the live app at **`https://app.proxycoach.ai`** (documented example hostname)—see the [project README](../README.md) for architecture and operations.
 
-```bash
-npm install --legacy-peer-deps
-# Configure .env.local (see parent README and variable usage in src/)
-npx prisma migrate deploy && npx prisma generate
-npm run dev
-```
+---
 
-**Node.js:** `>=20.19`, or supported `22.12+` / `24+` per `package.json` `engines`.
+## Maintainers (optional local checkout)
 
-For architecture, multi-tenancy, AI agents, and deployment, see the [project README](../README.md).
+If you need a **local** checkout for debugging, use Node `>=20.19` (or supported `22.12+` / `24+` per `package.json` `engines`), create `.env.local` mirroring production secrets (never commit real values), then `npm install --legacy-peer-deps`, `npx prisma migrate deploy && npx prisma generate`, and `npm run dev`. Production behavior and URLs remain defined in Azure and the main README.
 
-## Environment variables
-
-Create `.env.local` in this folder. You will need at minimum PostgreSQL (`DATABASE_URL`), Microsoft Entra ID credentials for NextAuth, Azure Blob Storage for uploads, and Azure OpenAI / search settings for chat and RAG. Optional: `ALLOWED_AUTO_REGISTER_DOMAINS` (comma-separated email domains for sign-in without an invitation). See inline documentation in `src/lib/` (e.g. `blob-storage.ts`, `azure-search.ts`) and API routes under `src/app/api/`.
-
-Example snippets for storage:
-
-```bash
-# Azure Blob — connection string (recommended)
-AZURE_STORAGE_CONNECTION_STRING=DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net
-# Optional: AZURE_STORAGE_CONTAINER_NAME=chat-files
-```
-
-For OpenAI keys and endpoints, use the Azure Portal: OpenAI resource → **Keys and Endpoint** and **Deployments**.
+Environment variable categories match **Azure App Service** settings: database, Entra ID, Blob, OpenAI/search, optional `ALLOWED_AUTO_REGISTER_DOMAINS`. See `src/lib/` (e.g. `blob-storage.ts`, `azure-search.ts`) and `src/app/api/` for names and usage.
