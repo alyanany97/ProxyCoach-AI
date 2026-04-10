@@ -118,4 +118,4 @@ Variable names and behavior are also documented inline under `web-agents/src`.
 
 ## License and contact
 
-This project is maintained for the Guelph YMCA trainer program. For access, deployment, or incident questions, contact alyanany07@gmail.com.
+This project is maintained for the Guelph YMCA trainer program. For access, deployment, or incident questions, contact alyanany97@gmail.com.
