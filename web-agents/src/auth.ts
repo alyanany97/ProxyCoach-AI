@@ -32,10 +32,22 @@ function requiredEnv(name: string): string {
  * 2. Pre-assign all users from these domains using the autoAssignUsersFromDomains
  *    server action (see @actions/admin/invitations.ts)
  * 3. Use scheduled job or webhook to assign users when they're added to Entra ID
+ *
+ * Configure comma-separated email domains via ALLOWED_AUTO_REGISTER_DOMAINS (e.g. "ymca.ca,partner.org").
+ * If unset or empty, no domain matches auto-register (invitation flow still applies).
  */
+function getAutoRegisterDomains(): string[] {
+   const raw = process.env.ALLOWED_AUTO_REGISTER_DOMAINS?.trim();
+   if (!raw) return [];
+   return raw
+      .split(",")
+      .map((d) => d.trim().toLowerCase())
+      .filter(Boolean);
+}
+
 function isAutoRegisterDomain(email: string): boolean {
    const normalizedEmail = email.toLowerCase().trim();
-   const allowedDomains = ["pmaipartner.ai", "pmaipartners.ai"];
+   const allowedDomains = getAutoRegisterDomains();
    return allowedDomains.some((domain) => normalizedEmail.endsWith(`@${domain}`));
 }
 
