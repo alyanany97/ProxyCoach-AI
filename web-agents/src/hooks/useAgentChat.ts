@@ -1,0 +1,491 @@
+"use client";
+
+import { useState, useCallback, useRef, useEffect } from "react";
+import { Message, MessageRole, FileAttachment } from "@/types/message";
+import { getSessionId } from "@/lib/session";
+import { Conversation } from "@/types/conversation";
+
+/**
+ * Hook for managing agent chat messages and streaming
+ * 
+ * Features:
+ * - Manages messages state
+ * - Handles streaming responses from agent API
+ * - Saves messages to database
+ * - Loads messages from database when conversation is selected
+ * - Provides functions to send messages
+ * - Manages loading states
+ * - Works with conversations like basic LLM chat
+ */
+export function useAgentChat(
+  agentId: string | null,
+  conversationId?: string | null,
+  onConversationChange?: (id: string | null) => void,
+  onTitleUpdate?: () => void
+) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(conversationId || null);
+  const [thinkingStage, setThinkingStage] = useState<string>("Thinking...");
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const thinkingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  /**
+   * Load messages for a conversation
+   */
+  const loadMessages = useCallback(async (convId: string) => {
+    try {
+      const sessionId = getSessionId();
+      const response = await fetch(`/api/conversations/${convId}?sessionId=${sessionId}`);
+      
+      if (!response.ok) {
+        throw new Error("Failed to load conversation");
+      }
+
+      const data = await response.json();
+      // Ensure timestamps are Date objects
+      const formattedMessages: Message[] = (data.messages || []).map((msg: any) => ({
+        ...msg,
+        timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+        createdAt: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+      }));
+      setMessages(formattedMessages);
+      setCurrentConversationId(convId);
+    } catch (error) {
+      console.error("Error loading messages:", error);
+      setMessages([]);
+    }
+  }, []);
+
+  /**
+   * Create a new conversation
+   */
+  const createConversation = useCallback(async (skipCallback = false): Promise<string> => {
+    try {
+      const sessionId = getSessionId();
+      const response = await fetch("/api/conversations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          sessionId, 
+          title: "New Conversation",
+          agentId: agentId || null, // Pass agentId to create agent-specific conversation
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create conversation");
+      }
+
+      const conversation = await response.json();
+      setCurrentConversationId(conversation.id);
+      // Only notify parent if we're not in the middle of sending a message
+      if (!skipCallback) {
+        onConversationChange?.(conversation.id);
+      }
+      return conversation.id;
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      throw error;
+    }
+  }, [agentId, onConversationChange]);
+
+  /**
+   * Save a message to the database
+   */
+  const saveMessage = useCallback(async (
+    convId: string,
+    role: MessageRole,
+    content: string,
+    updateTitle = false,
+    attachments?: FileAttachment[]
+  ) => {
+    try {
+      const sessionId = getSessionId();
+      await fetch(`/api/conversations/${convId}/messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": sessionId,
+        },
+        body: JSON.stringify({ role, content, updateTitle, attachments }),
+      });
+    } catch (error) {
+      console.error("Error saving message:", error);
+      // Don't throw - we still want the message to show even if save fails
+    }
+  }, []);
+
+  // Load messages when conversationId changes (but not if we're currently loading/sending)
+  useEffect(() => {
+    // Don't reload messages if we're currently sending a message or loading
+    if (isLoading) {
+      return;
+    }
+    
+    // Don't reload if we already have messages and the conversation hasn't changed
+    if (messages.length > 0 && conversationId === currentConversationId) {
+      return;
+    }
+    
+    // Don't reload if conversationId is null but we're already on null (new chat state)
+    if (!conversationId && !currentConversationId) {
+      return;
+    }
+    
+    if (conversationId && conversationId !== currentConversationId) {
+      loadMessages(conversationId);
+    } else if (!conversationId && currentConversationId) {
+      // New chat - clear messages only if we had a previous conversation
+      setMessages([]);
+      setCurrentConversationId(null);
+    }
+  }, [conversationId, currentConversationId, loadMessages, isLoading, messages.length]);
+
+  /**
+   * Generate a unique ID for messages
+   */
+  const generateId = useCallback(() => {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }, []);
+
+  /**
+   * Upload files to blob storage for agents
+   */
+  const uploadFiles = useCallback(async (files: File[], agentId: string): Promise<FileAttachment[]> => {
+    const uploadedAttachments: FileAttachment[] = [];
+
+    for (const file of files) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("agentId", agentId);
+
+        const response = await fetch("/api/files/upload-agent", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: "Failed to upload file" }));
+          throw new Error(errorData.error || "Failed to upload file");
+        }
+
+        const data = await response.json();
+        uploadedAttachments.push({
+          fileName: data.fileName,
+          fileType: data.fileType,
+          fileSize: data.fileSize,
+          fileUrl: data.blobUrl, // Store blob URL
+          extractedText: data.extractedText, // Store extracted text for document files
+        });
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        throw error;
+      }
+    }
+
+    return uploadedAttachments;
+  }, []);
+
+  /**
+   * Send a message and stream the response
+   */
+  const sendMessage = useCallback(async (content: string, files?: File[]) => {
+    if (!agentId) return;
+    
+    // Allow sending if there's text OR files
+    if ((!content.trim() && (!files || files.length === 0)) || isLoading) return;
+
+    setError(null);
+    setIsLoading(true);
+
+    // Get or create conversation ID
+    let convId = currentConversationId;
+    if (!convId) {
+      try {
+        // Skip callback in createConversation to prevent reloading messages while sending
+        // We'll notify parent manually after setting up the conversation state
+        convId = await createConversation(true);
+        // Notify parent - this updates the prop, but useEffect won't reload because isLoading is true
+        onConversationChange?.(convId);
+      } catch (error) {
+        setError("Failed to create conversation");
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Upload files to blob storage if any
+    let uploadedAttachments: FileAttachment[] | undefined;
+    if (files && files.length > 0) {
+      try {
+        uploadedAttachments = await uploadFiles(files, agentId);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "Failed to upload files");
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    // Create user message
+    const userMessage: Message = {
+      id: generateId(),
+      role: "user",
+      content: content.trim(),
+      timestamp: new Date(),
+      attachments: uploadedAttachments,
+    };
+
+    // Check if this is the first message before adding it
+    const isFirstMessage = messages.length === 0;
+
+    // Add user message to chat
+    setMessages((prev) => [...prev, userMessage]);
+
+    // Save user message to database (first message updates title)
+    await saveMessage(convId, "user", userMessage.content, isFirstMessage, userMessage.attachments);
+    
+    // Notify parent to refresh conversations list if this is the first message (title update)
+    if (isFirstMessage) {
+      onTitleUpdate?.();
+    }
+
+    // Create assistant message placeholder
+    const assistantMessageId = generateId();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, assistantMessage]);
+
+    // Cycle thinking stages so the UI doesn't feel frozen
+    const stages = ["Thinking...", "Searching your documents...", "Preparing response..."];
+    let stageIndex = 0;
+    setThinkingStage(stages[0]);
+    thinkingIntervalRef.current = setInterval(() => {
+      stageIndex = (stageIndex + 1) % stages.length;
+      setThinkingStage(stages[stageIndex]);
+    }, 2500);
+
+    const clearThinkingInterval = () => {
+      if (thinkingIntervalRef.current) {
+        clearInterval(thinkingIntervalRef.current);
+        thinkingIntervalRef.current = null;
+      }
+    };
+
+    // Abort controller for cancelling requests
+    abortControllerRef.current = new AbortController();
+
+    const noResponseMessage =
+      "I wasn't able to generate a response for that. You can try rephrasing your question, adding more detail, or asking something else.";
+
+    try {
+      // Prepare messages for API (excluding empty assistant message)
+      // Include attachments for messages that have them
+      const messagesForAPI = [...messages, userMessage].map((msg) => {
+        const apiMessage: {
+          role: string;
+          content: string | Array<{ type: string; text?: string; image_url?: { url: string } }>;
+          attachments?: FileAttachment[];
+        } = {
+          role: msg.role,
+          content: msg.content,
+          attachments: msg.attachments,
+        };
+
+        // If message has image attachments, format for Vision API
+        if (msg.attachments && msg.attachments.length > 0) {
+          const imageAttachments = msg.attachments.filter(att => att.fileType.startsWith("image/"));
+          if (imageAttachments.length > 0) {
+            const contentArray: Array<{ type: string; text?: string; image_url?: { url: string } }> = [];
+            
+            // Add text content if present
+            if (msg.content.trim()) {
+              contentArray.push({ type: "text", text: msg.content });
+            }
+
+            // Add image URLs
+            for (const image of imageAttachments) {
+              if (image.fileUrl) {
+                contentArray.push({
+                  type: "image_url",
+                  image_url: { url: image.fileUrl },
+                });
+              }
+            }
+
+            apiMessage.content = contentArray;
+          }
+        }
+
+        return apiMessage;
+      });
+
+      // Stream response from agent API
+      const response = await fetch(`/api/agents/${agentId}/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          messages: messagesForAPI,
+          conversationId: currentConversationId || undefined,
+        }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to parse error" }));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      // Read the stream
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("No reader available");
+      }
+
+      let accumulatedContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+
+              if (data.error) {
+                throw new Error(data.error);
+              }
+
+              if (data.content) {
+                accumulatedContent += data.content;
+                clearThinkingInterval();
+                // Update the assistant message with accumulated content
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, content: accumulatedContent }
+                      : msg
+                  )
+                );
+              }
+
+              if (data.done) {
+                clearThinkingInterval();
+                const finalContent = accumulatedContent.trim() || noResponseMessage;
+                setMessages((prev) =>
+                  prev.map((msg) =>
+                    msg.id === assistantMessageId ? { ...msg, content: finalContent } : msg
+                  )
+                );
+                if (convId && accumulatedContent.trim()) {
+                  await saveMessage(convId, "assistant", accumulatedContent, false);
+                  onTitleUpdate?.();
+                }
+                setIsLoading(false);
+                return;
+              }
+            } catch (parseError) {
+              // Skip malformed JSON lines
+              console.warn("Failed to parse SSE data:", parseError);
+            }
+          }
+        }
+      }
+
+      clearThinkingInterval();
+      // Stream ended without receiving data.done - treat as no response if empty
+      if (!accumulatedContent.trim()) {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMessageId ? { ...msg, content: noResponseMessage } : msg
+          )
+        );
+      }
+      setIsLoading(false);
+    } catch (error) {
+      clearThinkingInterval();
+      // Don't set error if it was an abort
+      if (error instanceof Error && error.name === "AbortError") {
+        setIsLoading(false);
+        return;
+      }
+
+      setError(error instanceof Error ? error.message : "An error occurred");
+      setIsLoading(false);
+
+      // Remove the assistant message if there was an error
+      setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
+    }
+  }, [agentId, messages, isLoading, generateId, currentConversationId, createConversation, saveMessage, uploadFiles, onTitleUpdate, onConversationChange]);
+
+  /**
+   * Clear all messages (starts new chat)
+   */
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    setError(null);
+    setIsLoading(false);
+    setCurrentConversationId(null);
+    onConversationChange?.(null);
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  }, [onConversationChange]);
+
+  /**
+   * Cancel current streaming request
+   */
+  const cancelStream = useCallback(() => {
+    if (thinkingIntervalRef.current) {
+      clearInterval(thinkingIntervalRef.current);
+      thinkingIntervalRef.current = null;
+    }
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (thinkingIntervalRef.current) {
+        clearInterval(thinkingIntervalRef.current);
+        thinkingIntervalRef.current = null;
+      }
+    };
+  }, []);
+
+  return {
+    messages,
+    isLoading,
+    error,
+    thinkingStage: isLoading ? thinkingStage : null,
+    conversationId: currentConversationId,
+    sendMessage,
+    clearMessages,
+    cancelStream,
+    loadMessages,
+  };
+}

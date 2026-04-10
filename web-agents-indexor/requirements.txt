@@ -1,0 +1,10 @@
+azure-functions
+azure-storage-blob
+azure-search-documents
+openai
+pypdf
+python-docx
+openpyxl
+pandas
+Pillow
+pytesseract

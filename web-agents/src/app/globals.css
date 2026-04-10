@@ -1,0 +1,190 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Base Colors - Brand Colors: #1B73D6 (primary), #0B1725 (dark navy) */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --sidebar-background: 0 0% 95%;
+    --chat-background: 0 0% 98%;
+    --input-background: 0 0% 100%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    
+    /* Primary - Brand Color #1B73D6 → HSL(214, 78%, 47%) */
+    --primary: 214 78% 47%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - Neutral gray */
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    
+    /* Muted - Subtle gray for secondary text */
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    
+    /* Accent - Darker brand variant for hover states (darker than sidebar for visibility) */
+    --accent: 214 40% 92%;
+    --accent-foreground: 214 78% 20%;
+    
+    /* Destructive - Error/Delete actions */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    /* Success - Success states */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 98%;
+    
+    /* Warning - Warning states */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 9%;
+    
+    /* Info - Informational states */
+    --info: 214 78% 47%;
+    --info-foreground: 0 0% 98%;
+    
+    /* Borders and Inputs */
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    
+    /* Focus Ring - Match primary brand color */
+    --ring: 214 78% 47%;
+    
+    /* Chart Colors */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    
+    /* Border Radius */
+    --radius: 0.5rem;
+    
+    /* Layout Heights */
+    --header-height: 3rem; /* 48px - matches h-12 */
+  }
+
+  .dark {
+    /* Dark Background - Using #0B1725 → HSL(210, 54%, 9%) */
+    --background: 210 54% 9%;
+    --foreground: 0 0% 98%;
+    --sidebar-background: 210 54% 12%;
+    --chat-background: 210 54% 10%;
+    --input-background: 210 54% 9%;
+    --card: 210 54% 11%;
+    --card-foreground: 0 0% 98%;
+    --popover: 210 54% 11%;
+    --popover-foreground: 0 0% 98%;
+    
+    /* Primary - Same brand color for consistency */
+    --primary: 214 78% 47%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary - Darker gray for dark mode */
+    --secondary: 210 30% 15%;
+    --secondary-foreground: 0 0% 98%;
+    
+    /* Muted - Darker for dark mode */
+    --muted: 210 30% 15%;
+    --muted-foreground: 0 0% 70%;
+    
+    /* Accent - Lighter variant for dark mode (lighter than sidebar for visibility) */
+    --accent: 214 40% 18%;
+    --accent-foreground: 214 75% 85%;
+    
+    /* Destructive - Darker for dark mode */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    
+    /* Success - Darker for dark mode */
+    --success: 142 60% 35%;
+    --success-foreground: 0 0% 98%;
+    
+    /* Warning - Adjusted for dark mode */
+    --warning: 38 85% 55%;
+    --warning-foreground: 0 0% 9%;
+    
+    /* Info - Same brand color for consistency */
+    --info: 214 78% 47%;
+    --info-foreground: 0 0% 100%;
+    
+    /* Borders and Inputs */
+    --border: 210 30% 20%;
+    --input: 210 30% 20%;
+    
+    /* Focus Ring - Same brand color for consistency */
+    --ring: 214 78% 47%;
+    
+    /* Chart Colors - Adjusted for dark mode */
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* Card base styles */
+  .card-base {
+    @apply bg-card text-card-foreground border border-border rounded-lg p-6;
+  }
+  
+  /* Button pattern utilities */
+  .btn-primary {
+    @apply bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+  }
+  
+  /* Link pattern */
+  .link-primary {
+    @apply text-primary hover:text-primary/80 underline-offset-4 hover:underline;
+  }
+  
+  /* Status indicators */
+  .status-success {
+    @apply bg-success/10 text-success-foreground border border-success/20;
+  }
+  
+  .status-warning {
+    @apply bg-warning/10 text-warning-foreground border border-warning/20;
+  }
+  
+  .status-error {
+    @apply bg-destructive/10 text-destructive-foreground border border-destructive/20;
+  }
+  
+  .status-info {
+    @apply bg-info/10 text-info-foreground border border-info/20;
+  }
+  
+  /* Logo SVG background matching sidebar */
+  .logo-svg-container svg path:first-child {
+    fill: hsl(var(--sidebar-background));
+  }
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}

@@ -1,0 +1,79 @@
+import { getAllCompanies } from "@/@actions/admin/companies";
+import { getAllUsers } from "@/@actions/admin/roles";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { CreateCompanyForm } from "./CreateCompanyForm";
+import { CompaniesSection } from "./CompaniesSection";
+import FileManagementTable from "@/components/files/FileManagementTable";
+
+export default async function AdminCompaniesPage() {
+  const result = await getAllCompanies();
+  const usersResult = await getAllUsers();
+
+  if (!result.success) {
+    redirect("/admin");
+  }
+
+  const { companies } = result;
+  const allUsers = usersResult.success ? usersResult.users : [];
+
+  // Format dates on server side to prevent hydration mismatches
+  const companiesWithFormattedDates = companies.map((company) => ({
+    ...company,
+    formattedCreatedAt: new Date(company.createdAt).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }),
+  }));
+
+  return (
+    <main className="p-6">
+      <div className="mb-6">
+        <div className="flex items-center gap-4 mb-2">
+          <Link
+            href="/admin"
+            className="text-sm text-muted-foreground hover:text-foreground underline"
+          >
+            ← Back to Admin Dashboard
+          </Link>
+        </div>
+        <h1 className="text-2xl font-semibold">Company Management</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          View and manage companies and their associated users. Companies are used for knowledge base access and billing aggregation.
+        </p>
+      </div>
+
+      {/* Create Company Section */}
+      <div className="mb-6 rounded-lg border border-border bg-muted p-4">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">
+          Create New Company
+        </h2>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Create a new company to organize users and manage billing.
+        </p>
+        <CreateCompanyForm />
+      </div>
+
+      {/* File Management Section */}
+      <div className="mb-6 rounded-lg border border-border bg-card p-6">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">
+          File Management
+        </h2>
+        <p className="mb-4 text-sm text-muted-foreground">
+          View, download, and delete files uploaded by companies. Select a company from the dropdown to filter files.
+        </p>
+        <FileManagementTable
+          companies={companies.map((c) => ({ id: c.id, name: c.name }))}
+          showCompanySelector={true}
+        />
+      </div>
+
+      {/* Companies Section - Collapsible with Dropdown */}
+      <CompaniesSection 
+        companies={companiesWithFormattedDates} 
+        allUsers={allUsers} 
+      />
+    </main>
+  );
+}
