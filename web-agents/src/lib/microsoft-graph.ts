@@ -389,7 +389,7 @@ export async function assignUserToAppByEmail(email: string, adminUserId: string)
  * This is useful when "User assignment required" is enabled in Entra ID
  * and you want to allow all users from certain domains to sign in automatically
  * 
- * @param domains Array of email domains (e.g., ["pmaipartners.ai", "pmaipartner.ai"])
+ * @param domains Array of email domains (e.g., ["contoso.com"])
  * @param adminUserId The ID of the admin user performing this action (for audit logging)
  * @returns Object with count of users assigned and any errors
  */

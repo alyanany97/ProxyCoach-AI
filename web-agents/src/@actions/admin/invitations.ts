@@ -222,7 +222,7 @@ export async function acceptInvitation(email: string, _userId: string) {
 /**
  * Server action to auto-assign all users from specified domains to the app
  * This is useful when "User assignment required" is enabled in Entra ID
- * and you want to allow all users from certain domains (e.g., pmaipartners.ai) to sign in automatically
+ * and you want to allow all users from certain domains (e.g., your-company.com) to sign in automatically
  * Only admins can trigger this action
  * 
  * @param domains Array of email domains (without @) to auto-assign

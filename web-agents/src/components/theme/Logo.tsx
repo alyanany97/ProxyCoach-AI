@@ -445,6 +445,7 @@ export default function Logo({ className }: { className?: string }) {
   return (
     <Link
       href="/"
+      aria-label="ProxyCoach AI home"
       className={cn(
         "flex items-center justify-start h-[var(--header-height)]",
         "hover:opacity-80 transition-opacity",

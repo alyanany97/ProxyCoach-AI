@@ -52,8 +52,8 @@ export const {
    // Security: If AUTH_URL is explicitly set, use it (more secure - prevents host header injection)
    // If AUTH_URL is not set, fall back to trustHost: true (required for Azure App Service behind proxy)
    // RECOMMENDED: Set AUTH_URL environment variable in Azure App Service configuration
-   // Example for develop: AUTH_URL=https://dev-portal.pmaipartners.ai
-   // Example for prod: AUTH_URL=https://portal.pmaipartners.ai
+   // Example for develop: AUTH_URL=https://dev-portal.your-domain.com
+   // Example for prod: AUTH_URL=https://portal.your-domain.com
    trustHost: process.env.AUTH_URL?.trim() ? undefined : true,
    providers: [
       MicrosoftEntraId({
@@ -61,7 +61,7 @@ export const {
          clientSecret: requiredEnv("AUTH_MICROSOFT_ENTRA_ID_CLIENT_SECRET"),
          issuer: `https://login.microsoftonline.com/${requiredEnv("AUTH_MICROSOFT_ENTRA_ID_TENANT_ID")}/v2.0`,
          // Allow users from the tenant to sign in even if not explicitly assigned
-         // User assignment will be handled programmatically for pmaipartners.ai domain
+         // User assignment will be handled programmatically for allowed email domains
          authorization: {
             params: {
                // Request email and profile to identify users for auto-assignment
@@ -100,7 +100,7 @@ export const {
             user.email = email;
          }
 
-         // Auto-register users from pmaipartner.ai domains (no invitation required)
+         // Auto-register users from allowed domains (no invitation required)
          if (isAutoRegisterDomain(email)) {
             console.log("[signIn callback] User is from auto-register domain:", email);
             
@@ -116,7 +116,7 @@ export const {
                   await assignUserToAppByEmail(email, existingUser.id);
                } catch (error) {
                   // Log but don't block sign-in - assignment might already exist
-                  console.warn("Failed to assign existing pmaipartner.ai user to app:", error);
+                  console.warn("Failed to assign existing user from an allowed domain to app:", error);
                }
             } else {
                console.log("[signIn callback] New user from auto-register domain, will be created");
@@ -175,7 +175,7 @@ export const {
 
             // For new users (just created), assign them to the app
             if (user.email) {
-               // Auto-register users from pmaipartner.ai domains
+               // Auto-register users from allowed domains
                if (isAutoRegisterDomain(user.email)) {
                   // Automatically assign user to the app (no invitation needed)
                   try {
@@ -185,7 +185,7 @@ export const {
                      // Log but don't block session creation
                      // Assignment might fail if user hasn't fully synced in tenant yet
                      // or if they're already assigned
-                     console.warn("Failed to assign new pmaipartner.ai user to app during sign-in:", error);
+                     console.warn("Failed to assign new user from an allowed domain to app during sign-in:", error);
                      // Don't throw - allow user to sign in, assignment can be retried
                   }
                } else {

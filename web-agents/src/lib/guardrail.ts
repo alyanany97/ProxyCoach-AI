@@ -13,7 +13,7 @@ function loadBlocklist() {
   
   try {
     // Try to read from the root directory (where the CSV file is)
-    // From web-agents directory, go up to pmai-agent-app, then to root
+    // From web-agents directory, go up to the app folder, then to repo root
     const blocklistPath = join(process.cwd(), '..', '..', 'legal-leo-blocklist.csv');
     const csvContent = readFileSync(blocklistPath, 'utf-8');
     const lines = csvContent.split('\n').slice(1); // Skip header

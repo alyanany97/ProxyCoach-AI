@@ -71,7 +71,7 @@ model User {
    emailVerified DateTime?
    image         String?
    role          String         @default("user")
-   source        String         @default("EXTERNAL") // "PMAI" or "EXTERNAL"
+   source        String         @default("EXTERNAL") // record origin; default EXTERNAL
    companyId     String? // Foreign key to Company
    createdAt     DateTime       @default(now())
    updatedAt     DateTime       @updatedAt
