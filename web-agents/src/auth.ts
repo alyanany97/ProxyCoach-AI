@@ -66,20 +66,20 @@ export const {
    // RECOMMENDED: Set AUTH_URL environment variable in Azure App Service configuration
    // Example for develop: AUTH_URL=https://dev-portal.your-domain.com
    // Example for prod: AUTH_URL=https://portal.your-domain.com
-   trustHost: process.env.AUTH_URL?.trim() ? undefined : true,
+   trustHost: true,
    providers: [
       MicrosoftEntraId({
          clientId: requiredEnv("AUTH_MICROSOFT_ENTRA_ID_CLIENT_ID"),
          clientSecret: requiredEnv("AUTH_MICROSOFT_ENTRA_ID_CLIENT_SECRET"),
          issuer: `https://login.microsoftonline.com/${requiredEnv("AUTH_MICROSOFT_ENTRA_ID_TENANT_ID")}/v2.0`,
-         // Allow users from the tenant to sign in even if not explicitly assigned
-         // User assignment will be handled programmatically for allowed email domains
          authorization: {
+            url: `https://login.microsoftonline.com/${process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID}/oauth2/v2.0/authorize`,
             params: {
-               // Request email and profile to identify users for auto-assignment
                scope: "openid profile email User.Read",
             },
          },
+         token: `https://login.microsoftonline.com/${process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID}/oauth2/v2.0/token`,
+         userinfo: "https://graph.microsoft.com/oidc/userinfo",
       }),
    ],
    pages: {
