@@ -19,7 +19,8 @@ const pool =
    globalForPrisma.pool ??
    new Pool({
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.DATABASE_URL?.includes(".postgres.database.azure.com")
+      ssl: (process.env.DATABASE_URL?.includes(".neon.tech") ||
+         process.env.DATABASE_URL?.includes(".postgres.database.azure.com"))
          ? { rejectUnauthorized: false }
          : undefined,
    });
