@@ -114,7 +114,10 @@ export default function Sidebar({
         "overflow-hidden",
         "px-4"
       )}>
-        <Logo className="flex-1" />
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-xl leading-none">🏋️</span>
+          <span className="font-semibold text-sm tracking-tight truncate">ProxyCoach AI</span>
+        </div>
         <ThemeToggle />
       </div>
 
