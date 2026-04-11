@@ -40,4 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/generated/prisma
+# Prisma client is generated under src/generated (see prisma/schema.prisma). Do not gitignore it:
+# Next.js 16 Turbopack skips gitignored paths during bundling, which breaks Vercel builds.

@@ -9,7 +9,7 @@ COPY prisma.config.ts ./
 # Install dependencies
 RUN npm install --legacy-peer-deps
 
-# Generate Prisma Client (outputs to ./generated/prisma)
+# Generate Prisma Client (outputs to ./src/generated/prisma per schema.prisma)
 RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db" npx prisma generate
 
 FROM node:20 AS builder
@@ -18,10 +18,9 @@ WORKDIR /app
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy Prisma files and generated client
+# Copy Prisma files
 COPY --from=deps /app/prisma ./prisma
 COPY --from=deps /app/prisma.config.ts ./
-COPY --from=deps /app/generated ./generated
 
 # Copy source code and config files needed for build
 COPY package*.json ./
@@ -30,6 +29,8 @@ COPY next.config.ts ./
 COPY postcss.config.js ./
 COPY tailwind.config.ts ./
 COPY src ./src
+# Restore Prisma client from deps (COPY src overwrote local tree; generate output lives under src/generated)
+COPY --from=deps /app/src/generated ./src/generated
 COPY public ./public
 
 # Build Next.js app
@@ -58,7 +59,7 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=deps /app/prisma ./prisma
 COPY --from=deps /app/prisma.config.ts ./
-COPY --from=deps /app/generated ./generated
+COPY --from=builder /app/src/generated ./src/generated
 
 # Verify package.json exists and we're in the right directory
 RUN pwd && ls -la && test -f package.json || (echo "ERROR: package.json not found in $(pwd)" && exit 1)
