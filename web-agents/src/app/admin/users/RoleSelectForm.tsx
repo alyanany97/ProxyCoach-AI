@@ -12,36 +12,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
 
 export function RoleSelectForm({
   userId,
   currentRole,
+  isCurrentUser = false,
 }: {
   userId: string;
   currentRole: string;
+  isCurrentUser?: boolean;
 }) {
   const [isPending, startTransition] = useTransition();
   const [selectedRole, setSelectedRole] = useState(currentRole);
 
   async function handleUpdateRole() {
-    if (!selectedRole) {
-      return;
-    }
-
-    if (selectedRole === currentRole) {
-      return;
-    }
+    if (!selectedRole || selectedRole === currentRole) return;
 
     startTransition(async () => {
-      try {
-        await updateUserRole(userId, selectedRole);
-        toast.success(`User role updated to ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}`);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to update role";
-        toast.error(errorMessage);
+      const result = await updateUserRole(userId, selectedRole);
+      if (result.success) {
+        toast.success(`Role updated to ${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}`);
+      } else {
+        toast.error(result.error ?? "Failed to update role");
+        setSelectedRole(currentRole);
       }
     });
+  }
+
+  if (isCurrentUser) {
+    return (
+      <span className="text-xs text-muted-foreground italic">Cannot edit your own role</span>
+    );
   }
 
   return (
@@ -51,12 +53,12 @@ export function RoleSelectForm({
         onValueChange={setSelectedRole}
         disabled={isPending}
       >
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger className="w-[130px] h-8 text-xs">
           <SelectValue placeholder="Select role..." />
         </SelectTrigger>
         <SelectContent>
           {VALID_ROLES.map((role) => (
-            <SelectItem key={role} value={role}>
+            <SelectItem key={role} value={role} className="text-xs">
               {role.charAt(0).toUpperCase() + role.slice(1)}
             </SelectItem>
           ))}
@@ -67,8 +69,9 @@ export function RoleSelectForm({
         onClick={handleUpdateRole}
         disabled={isPending || selectedRole === currentRole}
         size="sm"
+        className="h-8 text-xs"
       >
-        {isPending ? "Updating..." : "Update"}
+        {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Update"}
       </Button>
     </div>
   );
