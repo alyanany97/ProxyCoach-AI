@@ -50,6 +50,7 @@ export default function SidebarProfile() {
   const image = data.user.image ?? "";
   const role = (data.user as { role?: string }).role;
   const isAdmin = role === ROLES.ADMIN;
+  const isPT = role === ROLES.PT;
   const fallback = initials(email || name);
 
   return (
@@ -83,6 +84,15 @@ export default function SidebarProfile() {
           className="mb-2 flex w-full items-center justify-center rounded-md border border-border bg-muted px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
         >
           Admin Panel
+        </Link>
+      )}
+
+      {isPT && (
+        <Link
+          href="/pt"
+          className="mb-2 flex w-full items-center justify-center rounded-md border border-border bg-muted px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          🏋️ PT Panel
         </Link>
       )}
 
