@@ -29,19 +29,19 @@ export default async function AdminUsersPage() {
             ← Back to Admin Dashboard
           </Link>
         </div>
-        <h1 className="text-2xl font-semibold">User Management</h1>
+        <h1 className="text-2xl font-semibold">Client Management</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Manage user roles and permissions. View all users and update their roles.
+          Invite clients, manage their roles, and control access to ProxyCoach AI.
         </p>
       </div>
 
       {/* Invite User Section */}
       <div className="mb-6 rounded-lg border border-border bg-card p-4">
         <h2 className="mb-3 text-sm font-semibold text-card-foreground">
-          Invite Guest User
+          Invite Client
         </h2>
         <p className="mb-3 text-xs text-muted-foreground">
-          Invite users from external domains to access the app as guest users. They will be able to sign in with their Microsoft account.
+          Invite clients to ProxyCoach AI. They will sign in with their Microsoft account.
         </p>
         <InviteUserForm />
       </div>
@@ -97,7 +97,7 @@ export default async function AdminUsersPage() {
 
       {/* Users Section */}
       <div>
-        <h2 className="mb-3 text-lg font-semibold">All Users</h2>
+        <h2 className="mb-3 text-lg font-semibold">All Clients</h2>
         <div className="overflow-x-auto rounded-lg border border-border">
         <table className="w-full border-collapse">
           <thead className="bg-muted">

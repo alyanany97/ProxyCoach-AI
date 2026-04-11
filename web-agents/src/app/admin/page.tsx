@@ -37,10 +37,10 @@ export default async function AdminPage() {
           className="group rounded-lg border border-border bg-card p-6 hover:border-primary/50 hover:shadow-md transition-shadow"
         >
           <h2 className="text-lg font-semibold text-card-foreground group-hover:text-primary">
-            User Management
+            Client Management
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            View and manage user roles and permissions
+            Invite clients, manage roles and permissions
           </p>
         </Link>
         <Link
@@ -48,10 +48,10 @@ export default async function AdminPage() {
           className="group rounded-lg border border-border bg-card p-6 hover:border-primary/50 hover:shadow-md transition-shadow"
         >
           <h2 className="text-lg font-semibold text-card-foreground group-hover:text-primary">
-            Company Management
+            Trainer Management
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            View companies and their associated users for knowledge base and billing
+            Manage trainer profiles, knowledge bases, and file uploads
           </p>
         </Link>
       </div>

@@ -38,19 +38,19 @@ export default async function AdminCompaniesPage() {
             ← Back to Admin Dashboard
           </Link>
         </div>
-        <h1 className="text-2xl font-semibold">Company Management</h1>
+        <h1 className="text-2xl font-semibold">Trainer Management</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          View and manage companies and their associated users. Companies are used for knowledge base access and billing aggregation.
+          Manage trainer profiles, assign clients, and control knowledge base access.
         </p>
       </div>
 
       {/* Create Company Section */}
       <div className="mb-6 rounded-lg border border-border bg-muted p-4">
         <h2 className="mb-3 text-sm font-semibold text-foreground">
-          Create New Company
+          Add New Trainer
         </h2>
         <p className="mb-3 text-xs text-muted-foreground">
-          Create a new company to organize users and manage billing.
+          Create a trainer profile to organise their clients and knowledge base.
         </p>
         <CreateCompanyForm />
       </div>
@@ -61,7 +61,7 @@ export default async function AdminCompaniesPage() {
           File Management
         </h2>
         <p className="mb-4 text-sm text-muted-foreground">
-          View, download, and delete files uploaded by companies. Select a company from the dropdown to filter files.
+          View, download, and delete files uploaded by trainers. Select a trainer from the dropdown to filter files.
         </p>
         <FileManagementTable
           companies={companies.map((c) => ({ id: c.id, name: c.name }))}

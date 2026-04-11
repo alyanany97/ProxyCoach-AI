@@ -26,7 +26,7 @@ async function getFoundryAccessToken(): Promise<string> {
   const tokenEndpoint = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
   const scope = "https://ml.azure.com/.default"; //SUPER IMPORTANT: This scope is required for the Foundry API to work!!!!!!!!
 
-  console.log('[Legal Leo] Requesting Azure AD token with scope:', scope);
+  console.log('[ProxyCoach] Requesting Azure AD token with scope:', scope);
 
   const response = await fetch(tokenEndpoint, {
     method: "POST",
@@ -43,25 +43,25 @@ async function getFoundryAccessToken(): Promise<string> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`[Legal Leo] Token request failed: ${response.status}`, errorText);
+    console.error(`[ProxyCoach] Token request failed: ${response.status}`, errorText);
     throw new Error(`Failed to get Azure AD token: ${response.status}`);
   }
 
   const data = await response.json();
   
   if (!data.access_token) {
-    console.error('[Legal Leo] No access_token in response');
+    console.error('[ProxyCoach] No access_token in response');
     throw new Error('No access_token in token response');
   }
   
-  console.log('[Legal Leo] ✅ Token obtained successfully');
+  console.log('[ProxyCoach] ✅ Token obtained successfully');
   return data.access_token;
 }
 
 /**
  * POST /api/agents/[agentId]/chat
  * 
- * Legal Leo agent chat endpoint with:
+ * ProxyCoach AI agent chat endpoint with:
  * - Azure AD authentication (required for Foundry agents)
  * - RAG (Retrieval Augmented Generation) using Azure AI Search
  * - Streaming responses
@@ -74,14 +74,14 @@ export async function POST(
   try {
     const { agentId } = await params;
     
-    console.log('[Legal Leo] ===== New Request =====');
-    console.log('[Legal Leo] Agent ID:', agentId);
-    console.log('[Legal Leo] Timestamp:', new Date().toISOString());
+    console.log('[ProxyCoach] ===== New Request =====');
+    console.log('[ProxyCoach] Agent ID:', agentId);
+    console.log('[ProxyCoach] Timestamp:', new Date().toISOString());
 
     // ===== AUTHENTICATION =====
     const session = await auth();
     if (!session?.user?.id) {
-      console.log('[Legal Leo] No authenticated session');
+      console.log('[ProxyCoach] No authenticated session');
       return new Response(
         JSON.stringify({ error: "Authentication required" }),
         { status: 401, headers: { "Content-Type": "application/json" } }
@@ -95,15 +95,15 @@ export async function POST(
     });
 
     if (!user || !user.companyId) {
-      console.log('[Legal Leo] User or company not found');
+      console.log('[ProxyCoach] User or company not found');
       return new Response(
         JSON.stringify({ error: "User or company not found" }),
         { status: 404, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    console.log('[Legal Leo] User:', user.id);
-    console.log('[Legal Leo] Company:', user.companyId);
+    console.log('[ProxyCoach] User:', user.id);
+    console.log('[ProxyCoach] Company:', user.companyId);
 
     // ===== PARSE REQUEST =====
     const body = await req.json();
@@ -116,12 +116,12 @@ export async function POST(
       );
     }
 
-    console.log('[Legal Leo] Messages count:', messages.length);
+    console.log('[ProxyCoach] Messages count:', messages.length);
     
     // Log file attachments in messages
     messages.forEach((msg: any, index: number) => {
       if (msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0) {
-        console.log(`[Legal Leo] Message ${index} has ${msg.attachments.length} attachment(s):`, 
+        console.log(`[ProxyCoach] Message ${index} has ${msg.attachments.length} attachment(s):`, 
           msg.attachments.map((att: any) => ({
             fileName: att.fileName,
             fileType: att.fileType,
@@ -153,8 +153,8 @@ export async function POST(
           ? lastUserMessage.content 
           : JSON.stringify(lastUserMessage.content);
         
-        console.log('[Legal Leo] RAG search query:', query.substring(0, 100));
-        console.log('[Legal Leo] Filtering by companyId:', user.companyId, 'and shared documents');
+        console.log('[ProxyCoach] RAG search query:', query.substring(0, 100));
+        console.log('[ProxyCoach] Filtering by companyId:', user.companyId, 'and shared documents');
         
         // Search with companyId filter - returns documents for this company AND shared documents
         const searchResults = await searchDocuments(query, user.companyId, 5);
@@ -163,12 +163,12 @@ export async function POST(
           ragContext = formatSearchResultsAsContext(searchResults);
           const companyDocs = searchResults.filter(r => r.companyId === user.companyId).length;
           const sharedDocs = searchResults.filter(r => r.companyId === 'shared').length;
-          console.log('[Legal Leo] Found', searchResults.length, 'relevant documents:', companyDocs, 'company-specific,', sharedDocs, 'shared');
+          console.log('[ProxyCoach] Found', searchResults.length, 'relevant documents:', companyDocs, 'company-specific,', sharedDocs, 'shared');
         } else {
-          console.log('[Legal Leo] No documents found in search for company:', user.companyId, 'or shared documents');
+          console.log('[ProxyCoach] No documents found in search for company:', user.companyId, 'or shared documents');
         }
       } catch (error) {
-        console.error("[Legal Leo] RAG search error:", error);
+        console.error("[ProxyCoach] RAG search error:", error);
         // Continue without RAG context
       }
     }
@@ -191,17 +191,17 @@ export async function POST(
             // For document files, include extracted text
             if (attachment.extractedText) {
               attachmentTexts.push(`\n\n[File: ${attachment.fileName}]\n${attachment.extractedText}`);
-              console.log(`[Legal Leo] Including extracted text from ${attachment.fileName} (${attachment.extractedText.length} chars)`);
+              console.log(`[ProxyCoach] Including extracted text from ${attachment.fileName} (${attachment.extractedText.length} chars)`);
             } else if (!attachment.fileType.startsWith("image/")) {
               // Document file without extracted text - mention the file
               attachmentTexts.push(`\n\n[File attached: ${attachment.fileName} (${attachment.fileType})]`);
-              console.log(`[Legal Leo] Document file ${attachment.fileName} has no extracted text`);
+              console.log(`[ProxyCoach] Document file ${attachment.fileName} has no extracted text`);
             }
             
             // For images, include a note about the image
             if (attachment.fileType.startsWith("image/") && attachment.fileUrl) {
               attachmentTexts.push(`\n\n[Image attached: ${attachment.fileName} - URL: ${attachment.fileUrl}]`);
-              console.log(`[Legal Leo] Image file attached: ${attachment.fileName}`);
+              console.log(`[ProxyCoach] Image file attached: ${attachment.fileName}`);
             }
           }
           
@@ -223,24 +223,24 @@ export async function POST(
         };
       });
 
-    console.log('[Legal Leo] Total messages:', chatMessages.length);
+    console.log('[ProxyCoach] Total messages:', chatMessages.length);
 
     // ===== GET FOUNDRY ENDPOINT =====
     const responsesEndpoint = process.env.RESPONSES_API_ENDPOINT;
     if (!responsesEndpoint) {
-      console.error('[Legal Leo] RESPONSES_API_ENDPOINT not configured');
+      console.error('[ProxyCoach] RESPONSES_API_ENDPOINT not configured');
       return new Response(
-        JSON.stringify({ error: "Legal Leo endpoint not configured" }),
+        JSON.stringify({ error: "Agent endpoint not configured" }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    console.log('[Legal Leo] Foundry endpoint:', responsesEndpoint);
+    console.log('[ProxyCoach] Foundry endpoint:', responsesEndpoint);
 
     // ===== AZURE AD AUTHENTICATION =====
-    console.log('[Legal Leo] Getting Azure AD access token...');
+    console.log('[ProxyCoach] Getting Azure AD access token...');
     const accessToken = await getFoundryAccessToken();
-    console.log('[Legal Leo] ✅ Access token obtained');
+    console.log('[ProxyCoach] ✅ Access token obtained');
 
     // ===== PREPARE REQUEST =====
     // Azure Foundry Responses API requires "input" parameter (not "messages")
@@ -253,7 +253,7 @@ export async function POST(
       content: msg.content || "",  // Message content (ensure not undefined)
     }));
 
-    console.log('[Legal Leo] Prepared', inputItems.length, 'input items');
+    console.log('[ProxyCoach] Prepared', inputItems.length, 'input items');
 
     const requestBody = JSON.stringify({
       input: inputItems,  // Use "input" parameter with typed items
@@ -265,11 +265,11 @@ export async function POST(
     requestHeaders.set('Authorization', `Bearer ${accessToken}`);
     requestHeaders.set('Content-Type', 'application/json');
     
-    console.log('[Legal Leo] Request configured');
-    console.log('[Legal Leo] Body size:', requestBody.length, 'bytes');
+    console.log('[ProxyCoach] Request configured');
+    console.log('[ProxyCoach] Body size:', requestBody.length, 'bytes');
 
     // ===== CALL FOUNDRY AGENT API =====
-    console.log('[Legal Leo] 🚀 Calling Foundry Agent Service...');
+    console.log('[ProxyCoach] 🚀 Calling Foundry Agent Service...');
     
     const foundryResponse = await fetch(responsesEndpoint, {
       method: 'POST',
@@ -277,7 +277,7 @@ export async function POST(
       body: requestBody,
     });
 
-    console.log('[Legal Leo] Response status:', foundryResponse.status);
+    console.log('[ProxyCoach] Response status:', foundryResponse.status);
 
     // ===== HANDLE API ERRORS =====
     if (!foundryResponse.ok) {
@@ -287,10 +287,10 @@ export async function POST(
         responseHeaders[key] = value;
       });
       
-      console.error('[Legal Leo] ❌ Foundry API error:', foundryResponse.status);
-      console.error('[Legal Leo] Status text:', foundryResponse.statusText);
-      console.error('[Legal Leo] Error body:', errorText || '(empty)');
-      console.error('[Legal Leo] Headers:', JSON.stringify(responseHeaders, null, 2));
+      console.error('[ProxyCoach] ❌ Foundry API error:', foundryResponse.status);
+      console.error('[ProxyCoach] Status text:', foundryResponse.statusText);
+      console.error('[ProxyCoach] Error body:', errorText || '(empty)');
+      console.error('[ProxyCoach] Headers:', JSON.stringify(responseHeaders, null, 2));
       
       // Parse error JSON if available
       let errorDetails = errorText || 'No error details provided';
@@ -338,7 +338,7 @@ export async function POST(
       
       return new Response(
         JSON.stringify({ 
-          error: `Legal Leo API error: ${foundryResponse.status} ${foundryResponse.statusText}`,
+          error: `Agent API error: ${foundryResponse.status} ${foundryResponse.statusText}`,
           details: errorDetails,
           hint: foundryResponse.status === 401 
             ? "Authentication failed. Check if service principal has 'Azure AI User' role."
@@ -353,7 +353,7 @@ export async function POST(
       );
     }
 
-    console.log('[Legal Leo] ✅ Request successful, streaming response...');
+    console.log('[ProxyCoach] ✅ Request successful, streaming response...');
 
     // ===== CHECK FOR BLOCKLIST MATCHES EARLY =====
     // Check user message for blocklist matches - needed for guardrail detection
@@ -386,12 +386,12 @@ export async function POST(
             const { done, value } = await reader.read();
             
             if (done) {
-              console.log('[Legal Leo] ✅ Stream complete, chunks received:', chunkCount, 'events processed:', eventCount);
+              console.log('[ProxyCoach] ✅ Stream complete, chunks received:', chunkCount, 'events processed:', eventCount);
               if (chunkCount === 0 && eventCount > 0) {
-                console.warn('[Legal Leo] No content was extracted from', eventCount, 'event(s). Foundry may use event types we do not parse for content.');
+                console.warn('[ProxyCoach] No content was extracted from', eventCount, 'event(s). Foundry may use event types we do not parse for content.');
               }
               if (chunkCount === 0 && eventCount === 0) {
-                console.warn('[Legal Leo] Stream ended with no data lines received. Foundry may have returned an empty or non-SSE response.');
+                console.warn('[ProxyCoach] Stream ended with no data lines received. Foundry may have returned an empty or non-SSE response.');
               }
               
               // If guardrail block was detected but response wasn't sent yet, send it now
@@ -427,18 +427,18 @@ export async function POST(
             for (const line of lines) {
               // DEBUG: Log every raw line received
               if (line.trim()) {
-                console.log('[Legal Leo] Raw line:', line.substring(0, 200));
+                console.log('[ProxyCoach] Raw line:', line.substring(0, 200));
               }
               
               if (line.startsWith('data: ')) {
                 const data = line.slice(6).trim();
                 
                 // DEBUG: Log the data chunk
-                console.log('[Legal Leo] Data chunk:', data.substring(0, 200));
+                console.log('[ProxyCoach] Data chunk:', data.substring(0, 200));
                 
                 // Check for stream end
                 if (data === '[DONE]') {
-                  console.log('[Legal Leo] Received [DONE] signal');
+                  console.log('[ProxyCoach] Received [DONE] signal');
                   const doneData = JSON.stringify({ content: "", done: true });
                   controller.enqueue(encoder.encode(`data: ${doneData}\n\n`));
                   controller.close();
@@ -452,7 +452,7 @@ export async function POST(
                   
                   // Handle error events
                   if (parsed.type === 'error') {
-                    console.error('[Legal Leo] Foundry error:', parsed.error);
+                    console.error('[ProxyCoach] Foundry error:', parsed.error);
                     const errorMessage = parsed.error?.message || 'An error occurred';
                     const errorData = JSON.stringify({
                       error: errorMessage,
@@ -465,7 +465,7 @@ export async function POST(
                   
                   // Handle response.failed events
                   if (parsed.type === 'response.failed') {
-                    console.error('[Legal Leo] Response failed:', parsed.response?.status);
+                    console.error('[ProxyCoach] Response failed:', parsed.response?.status);
                     const errorMessage = parsed.response?.error?.message || 'Response failed';
                     const errorData = JSON.stringify({
                       error: errorMessage,
@@ -487,7 +487,7 @@ export async function POST(
                   }
                   
                   // DEBUG: Log the parsed object structure (skip done events to reduce noise)
-                  console.log('[Legal Leo] Parsed structure:', JSON.stringify(parsed, null, 2).substring(0, 500));
+                  console.log('[ProxyCoach] Parsed structure:', JSON.stringify(parsed, null, 2).substring(0, 500));
                   
                   // Extract content - focus on Foundry's delta format (like basic chat focuses on delta.content)
                   let content = '';
@@ -565,13 +565,13 @@ export async function POST(
                     const chunkData = JSON.stringify({ content, done: false });
                     controller.enqueue(encoder.encode(`data: ${chunkData}\n\n`));
                   } else {
-                    console.log('[Legal Leo] No content found in chunk, keys:', Object.keys(parsed));
+                    console.log('[ProxyCoach] No content found in chunk, keys:', Object.keys(parsed));
                   }
                   
                   // Handle guardrail block - ONLY when blocked: true AND blocklist match
                   // This is the ONLY condition where we break early
                   if (shouldBlock && !guardrailBlockDetected) {
-                    console.log('[Legal Leo] 🚫 Guardrail block detected - blocked: true + blocklist match');
+                    console.log('[ProxyCoach] 🚫 Guardrail block detected - blocked: true + blocklist match');
                     guardrailBlockDetected = true;
                     
                     // Log escalation (creates escalation incident in database)
@@ -622,16 +622,16 @@ export async function POST(
                   if (parsed.type === 'response.done' || 
                       (parsed.response?.status === 'complete') ||
                       (parsed.type === 'response.output_item.done' && parsed.item?.status === 'complete')) {
-                    console.log('[Legal Leo] Completion signal detected (continuing):', parsed.type, parsed.response?.status || parsed.item?.status);
+                    console.log('[ProxyCoach] Completion signal detected (continuing):', parsed.type, parsed.response?.status || parsed.item?.status);
                   }
                 } catch (e) {
                   // Skip invalid JSON lines but log the error
-                  console.warn('[Legal Leo] Failed to parse JSON:', e);
-                  console.warn('[Legal Leo] Invalid data was:', data.substring(0, 100));
+                  console.warn('[ProxyCoach] Failed to parse JSON:', e);
+                  console.warn('[ProxyCoach] Invalid data was:', data.substring(0, 100));
                 }
               } else if (line.trim() && !line.startsWith(':')) {
                 // Log any non-data, non-comment lines
-                console.log('[Legal Leo] Non-data line:', line.substring(0, 100));
+                console.log('[ProxyCoach] Non-data line:', line.substring(0, 100));
               }
             }
           }
@@ -677,7 +677,7 @@ export async function POST(
           controller.close();
           
         } catch (error) {
-          console.error("[Legal Leo] Streaming error:", error);
+          console.error("[ProxyCoach] Streaming error:", error);
           
           // Check if error might be related to guardrail blocks
           const errorMessage = error instanceof Error ? error.message : String(error);
@@ -726,7 +726,7 @@ export async function POST(
     });
     
   } catch (error) {
-    console.error("[Legal Leo] ❌ Unexpected error:", error);
+    console.error("[ProxyCoach] ❌ Unexpected error:", error);
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "An unexpected error occurred",
