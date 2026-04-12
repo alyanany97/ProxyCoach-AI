@@ -72,13 +72,15 @@ export const {
       MicrosoftEntraId({
          clientId: requiredEnv("AUTH_MICROSOFT_ENTRA_ID_CLIENT_ID"),
          clientSecret: requiredEnv("AUTH_MICROSOFT_ENTRA_ID_CLIENT_SECRET"),
-         // "organizations" allows users from any Azure AD tenant to sign in.
-         // Access is still controlled by the signIn callback (invitation check + allowed domains).
+         // Use ProxyCoach's specific tenant so B2B guest users authenticate through
+         // this tenant (where their guest account lives after accepting the invitation).
+         // Using "organizations" incorrectly routes them to their home tenant instead.
+         issuer: `https://login.microsoftonline.com/${requiredEnv("AUTH_MICROSOFT_ENTRA_ID_TENANT_ID")}/v2.0`,
          authorization: {
-            url: "https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize",
+            url: `https://login.microsoftonline.com/${process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID}/oauth2/v2.0/authorize`,
             params: { scope: "openid profile email User.Read" },
          },
-         token: "https://login.microsoftonline.com/organizations/oauth2/v2.0/token",
+         token: `https://login.microsoftonline.com/${process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID}/oauth2/v2.0/token`,
          userinfo: "https://graph.microsoft.com/oidc/userinfo",
       }),
    ],
