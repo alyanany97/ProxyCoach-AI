@@ -150,7 +150,11 @@ export async function inviteGuestUser(email: string, userId: string): Promise<st
 
    // User doesn't exist, send invitation
    const inviteEndpoint = "https://graph.microsoft.com/v1.0/invitations";
-   const redirectUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+   const redirectUrl =
+      process.env.AUTH_URL ||
+      process.env.NEXTAUTH_URL ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
+      "http://localhost:3000";
 
    try {
       const response = await fetch(inviteEndpoint, {
