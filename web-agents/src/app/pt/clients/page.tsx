@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { PTInviteForm } from "./PTInviteForm";
 import { PTAssignClientButton } from "./PTAssignClientButton";
 import { PTRemoveClientButton } from "./PTRemoveClientButton";
+import { CancelInvitationButton } from "@/components/invitations/CancelInvitationButton";
 
 export default async function PTClientsPage() {
   const clientsResult = await getPTClients();
@@ -93,6 +94,7 @@ export default async function PTClientsPage() {
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Expires</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -106,6 +108,9 @@ export default async function PTClientsPage() {
                         <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                           Pending
                         </span>
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        <CancelInvitationButton invitationId={inv.id} email={inv.email} />
                       </td>
                     </tr>
                   ))}

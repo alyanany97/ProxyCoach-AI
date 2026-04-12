@@ -8,6 +8,7 @@ import { RoleSelectForm } from "./RoleSelectForm";
 import { InviteUserForm } from "./InviteUserForm";
 import { cn } from "@/lib/utils";
 import { Users, Clock, ShieldCheck } from "lucide-react";
+import { CancelInvitationButton } from "@/components/invitations/CancelInvitationButton";
 
 const ROLE_STYLES: Record<string, string> = {
   admin: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20",
@@ -99,6 +100,7 @@ export default async function AdminUsersPage() {
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Invited By</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Expires</th>
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -115,6 +117,9 @@ export default async function AdminUsersPage() {
                         <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400 border border-amber-500/20">
                           Pending
                         </span>
+                      </td>
+                      <td className="px-6 py-3 text-right">
+                        <CancelInvitationButton invitationId={inv.id} email={inv.email} />
                       </td>
                     </tr>
                   ))}
