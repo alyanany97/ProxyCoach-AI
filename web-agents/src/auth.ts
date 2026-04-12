@@ -224,6 +224,37 @@ export const {
                      console.warn("Failed to assign new user from an allowed domain to app during sign-in:", error);
                      // Don't throw - allow user to sign in, assignment can be retried
                   }
+
+                  // Also accept any pending invitation for this email
+                  // (e.g. if a ytr.ymca.ca trainer was explicitly invited)
+                  const hasInvitation = await checkInvitation(user.email);
+                  if (hasInvitation) {
+                     await acceptInvitation(user.email, user.id);
+                  }
+
+                  // Auto-create trainer profile for ytr.ymca.ca users if they don't have one
+                  if (user.email.toLowerCase().endsWith("@ytr.ymca.ca")) {
+                     const dbUser = await prisma.user.findUnique({
+                        where: { id: user.id },
+                        select: { id: true, name: true, companyId: true },
+                     });
+
+                     if (dbUser && !dbUser.companyId) {
+                        try {
+                           const trainerName = dbUser.name || user.email.split("@")[0];
+                           const company = await prisma.company.create({
+                              data: { name: trainerName },
+                           });
+                           await prisma.user.update({
+                              where: { id: user.id },
+                              data: { companyId: company.id },
+                           });
+                           console.log(`[session callback] Auto-created trainer profile "${trainerName}" for ${user.email}`);
+                        } catch (error) {
+                           console.warn("Failed to auto-create trainer profile:", error);
+                        }
+                     }
+                  }
                } else {
                   // For other users, check if they have an invitation
                   const hasInvitation = await checkInvitation(user.email);

@@ -2,6 +2,7 @@ import { getPTDashboard } from "@/@actions/pt";
 import Link from "next/link";
 import { Users, FileText, Settings } from "lucide-react";
 import { PTProfileForm } from "./PTProfileForm";
+import SignOutButton from "@/components/auth/SignOutButton";
 
 export default async function PTPanelPage() {
   const result = await getPTDashboard();
@@ -28,6 +29,7 @@ export default async function PTPanelPage() {
               <h1 className="text-lg font-semibold">PT Panel</h1>
             </div>
           </div>
+          <SignOutButton />
         </div>
       </div>
 

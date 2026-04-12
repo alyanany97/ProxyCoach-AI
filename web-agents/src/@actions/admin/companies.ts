@@ -59,7 +59,7 @@ export async function createCompany(data: CompanyFormData) {
             },
         });
 
-        revalidatePath("/admin/companies");
+        revalidatePath("/admin/trainers");
         return { success: true, company };
     } catch (error) {
         console.error("Error creating company:", error);
@@ -90,7 +90,7 @@ export async function updateCompany(companyId: string, data: CompanyUpdateData) 
             },
         });
 
-        revalidatePath("/admin/companies");
+        revalidatePath("/admin/trainers");
         return { success: true, company };
     } catch (error) {
         console.error("Error updating company:", error);
@@ -131,7 +131,7 @@ export async function deleteCompany(companyId: string) {
             where: { id: companyId },
         });
 
-        revalidatePath("/admin/companies");
+        revalidatePath("/admin/trainers");
         return { success: true };
     } catch (error) {
         console.error("Error deleting company:", error);
@@ -180,8 +180,8 @@ export async function assignUserToCompany(userId: string, companyId: string | nu
             data: { companyId },
         });
 
-        revalidatePath("/admin/companies");
-        revalidatePath("/admin/users");
+        revalidatePath("/admin/trainers");
+        revalidatePath("/admin/clients");
         return { success: true, user };
     } catch (error) {
         console.error("Error assigning user to company:", error);

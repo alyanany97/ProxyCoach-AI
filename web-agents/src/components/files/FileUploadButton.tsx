@@ -46,7 +46,7 @@ export default function FileUploadButton({
       return;
     }
     if (!selectedCompanyId) {
-      toast.error("Please select a company");
+      toast.error("Please select a trainer");
       return;
     }
     fileInputRef.current?.click();
@@ -61,7 +61,7 @@ export default function FileUploadButton({
       return;
     }
     if (!selectedCompanyId) {
-      toast.error("Please select a company");
+      toast.error("Please select a trainer");
       return;
     }
 
@@ -144,7 +144,7 @@ export default function FileUploadButton({
 
         <div className="flex-1">
           <label className="mb-2 block text-sm font-medium text-foreground">
-            Select Company:
+            Select Trainer:
           </label>
           <Select
             value={selectedCompanyId}
@@ -152,11 +152,11 @@ export default function FileUploadButton({
             disabled={isUploading}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Choose a company..." />
+              <SelectValue placeholder="Choose a trainer..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-companies">All Companies (Shared)</SelectItem>
-              <SelectItem value="No_Company_Assigned">No Company Assigned</SelectItem>
+              <SelectItem value="all-companies">All Trainers (Shared)</SelectItem>
+              <SelectItem value="No_Company_Assigned">No Trainer Assigned</SelectItem>
               {companies.map((company) => (
                 <SelectItem key={company.id} value={company.id}>
                   {company.name}
@@ -166,7 +166,7 @@ export default function FileUploadButton({
           </Select>
           {isShared && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Shared files are accessible to all companies
+              Shared files are accessible to all trainers
             </p>
           )}
         </div>

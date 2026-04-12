@@ -33,7 +33,7 @@ export default async function AdminPage() {
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <Link
-          href="/admin/users"
+          href="/admin/clients"
           className="group rounded-lg border border-border bg-card p-6 hover:border-primary/50 hover:shadow-md transition-shadow"
         >
           <h2 className="text-lg font-semibold text-card-foreground group-hover:text-primary">
@@ -44,7 +44,7 @@ export default async function AdminPage() {
           </p>
         </Link>
         <Link
-          href="/admin/companies"
+          href="/admin/trainers"
           className="group rounded-lg border border-border bg-card p-6 hover:border-primary/50 hover:shadow-md transition-shadow"
         >
           <h2 className="text-lg font-semibold text-card-foreground group-hover:text-primary">

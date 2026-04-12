@@ -5,6 +5,7 @@ import { PTInviteForm } from "./PTInviteForm";
 import { PTAssignClientButton } from "./PTAssignClientButton";
 import { PTRemoveClientButton } from "./PTRemoveClientButton";
 import { CancelInvitationButton } from "@/components/invitations/CancelInvitationButton";
+import SignOutButton from "@/components/auth/SignOutButton";
 
 export default async function PTClientsPage() {
   const clientsResult = await getPTClients();
@@ -25,12 +26,15 @@ export default async function PTClientsPage() {
     <main className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card px-6 py-4">
-        <div className="flex items-center gap-4">
-          <Link href="/pt" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← PT Panel
-          </Link>
-          <span className="text-muted-foreground">/</span>
-          <h1 className="text-lg font-semibold">My Clients</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/pt" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              ← PT Panel
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <h1 className="text-lg font-semibold">My Clients</h1>
+          </div>
+          <SignOutButton />
         </div>
       </div>
 

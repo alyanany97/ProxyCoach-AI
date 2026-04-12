@@ -1,6 +1,7 @@
 import { getPTDashboard } from "@/@actions/pt";
 import Link from "next/link";
 import FileManagementTable from "@/components/files/FileManagementTable";
+import SignOutButton from "@/components/auth/SignOutButton";
 
 export default async function PTFilesPage() {
   const result = await getPTDashboard();
@@ -11,12 +12,15 @@ export default async function PTFilesPage() {
     <main className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border bg-card px-6 py-4">
-        <div className="flex items-center gap-4">
-          <Link href="/pt" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← PT Panel
-          </Link>
-          <span className="text-muted-foreground">/</span>
-          <h1 className="text-lg font-semibold">Knowledge Base Files</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/pt" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              ← PT Panel
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <h1 className="text-lg font-semibold">Knowledge Base Files</h1>
+          </div>
+          <SignOutButton />
         </div>
       </div>
 

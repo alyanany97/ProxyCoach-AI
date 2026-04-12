@@ -79,7 +79,7 @@ export async function createInvitation(email: string) {
       },
     });
 
-    revalidatePath("/admin/users");
+    revalidatePath("/admin/clients");
     return { success: true as const, invitation };
   } catch (error) {
     console.error("Error creating invitation:", error);
@@ -159,7 +159,7 @@ export async function cancelInvitation(invitationId: string) {
       data: { status: "cancelled" },
     });
 
-    revalidatePath("/admin/users");
+    revalidatePath("/admin/clients");
     revalidatePath("/pt/clients");
     return { success: true as const };
   } catch (error) {
@@ -241,7 +241,7 @@ export async function autoAssignUsersFromDomains(domains: string[]) {
       session.user.id
     );
 
-    revalidatePath("/admin/users");
+    revalidatePath("/admin/clients");
     return {
       success: true as const,
       assigned: result.assigned,
