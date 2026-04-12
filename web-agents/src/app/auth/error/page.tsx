@@ -16,7 +16,7 @@ function AuthErrorContent() {
   if (error === "AccessDenied") {
     errorTitle = "Access Denied";
     errorMessage =
-      "Your account hasn't been granted access to ProxyCoach AI. Contact your administrator to request an invitation.";
+      "Your account doesn't have access to ProxyCoach AI. Clients need an invitation from their trainer. Trainers must use a @ytr.ymca.ca Microsoft account.";
   } else if (error === "Configuration") {
     errorTitle = "Configuration Error";
     errorMessage =

@@ -150,11 +150,15 @@ export async function inviteGuestUser(email: string, userId: string): Promise<st
 
    // User doesn't exist, send invitation
    const inviteEndpoint = "https://graph.microsoft.com/v1.0/invitations";
-   const redirectUrl =
+   const baseUrl =
       process.env.AUTH_URL ||
       process.env.NEXTAUTH_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null) ||
       "http://localhost:3000";
+
+  // Direct invitees to the correct sign-in screen based on their email domain
+  const signinType = email.toLowerCase().endsWith("@ytr.ymca.ca") ? "trainer" : "client";
+  const redirectUrl = `${baseUrl}/auth/signin?type=${signinType}`;
 
    try {
       const response = await fetch(inviteEndpoint, {

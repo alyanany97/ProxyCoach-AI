@@ -111,6 +111,13 @@ export const {
             user.email = email;
          }
 
+         // Always allow the designated super-admin
+         const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
+         if (adminEmail && email.toLowerCase().trim() === adminEmail) {
+            console.log("[signIn callback] Super-admin sign-in allowed:", email);
+            return true;
+         }
+
          // Auto-register users from allowed domains (no invitation required)
          if (isAutoRegisterDomain(email)) {
             console.log("[signIn callback] User is from auto-register domain:", email);
@@ -173,16 +180,31 @@ export const {
             return true;
          }
 
-         // For users from the same tenant (your organization), allow sign in
-         // For external users without invitation, you can reject them here
-         // For now, we'll allow all Microsoft Entra authenticated users
-         // You can add tenant ID checking here if needed
-         return true;
+         // No invitation found — deny access
+         console.warn("[signIn callback] Access denied — no invitation for:", email);
+         return false;
       },
       async session({ session, user }) {
          if (session.user) {
             session.user.id = user.id;
             session.user.role = user.role ?? "user";
+
+            // Always ensure the super-admin has admin role
+            const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
+            if (adminEmail && user.email?.toLowerCase().trim() === adminEmail && user.role !== ROLES.ADMIN) {
+               await prisma.user.update({ where: { id: user.id }, data: { role: ROLES.ADMIN } });
+               session.user.role = ROLES.ADMIN;
+            }
+
+            // Auto-assign PT role for ytr.ymca.ca emails if not already elevated
+            if (
+               user.email?.toLowerCase().endsWith("@ytr.ymca.ca") &&
+               user.role !== ROLES.PT &&
+               user.role !== ROLES.ADMIN
+            ) {
+               await prisma.user.update({ where: { id: user.id }, data: { role: ROLES.PT } });
+               session.user.role = ROLES.PT;
+            }
 
             // For new users (just created), assign them to the app
             if (user.email) {
