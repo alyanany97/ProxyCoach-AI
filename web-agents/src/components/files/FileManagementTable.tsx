@@ -174,7 +174,7 @@ export default function FileManagementTable({
           Upload Document
         </h3>
         <p className="mb-4 text-xs text-muted-foreground">
-          Upload a document to be indexed for the selected agent and company. The file will be automatically processed and indexed.
+          Upload a document to be indexed for the selected trainer. The file will be automatically processed and indexed.
         </p>
         <FileUploadButton
           companies={companies}
@@ -182,11 +182,11 @@ export default function FileManagementTable({
         />
       </div>
 
-      {/* Company Selector */}
+      {/* Trainer Selector */}
       {showCompanySelector && (
         <div className="flex items-center gap-4">
           <label className="text-sm font-medium text-foreground">
-            Select Company:
+            Select Personal Trainer:
           </label>
           <Select
             value={selectedCompanyId}
@@ -194,11 +194,11 @@ export default function FileManagementTable({
             disabled={isLoading}
           >
             <SelectTrigger className="w-64">
-              <SelectValue placeholder="Select a company..." />
+              <SelectValue placeholder="Select a trainer..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Companies</SelectItem>
-              <SelectItem value="No_Company_Assigned">No Company Assigned</SelectItem>
+              <SelectItem value="all">All Trainers</SelectItem>
+              <SelectItem value="No_Company_Assigned">No Trainer Assigned</SelectItem>
               {companies.map((company) => (
                 <SelectItem key={company.id} value={company.id}>
                   {company.name}
@@ -229,7 +229,7 @@ export default function FileManagementTable({
         ) : files.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-sm text-muted-foreground">
-              No files found for the selected company.
+              No files found for the selected trainer.
             </p>
           </div>
         ) : (
@@ -247,7 +247,7 @@ export default function FileManagementTable({
                     Uploaded By
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Company
+                    Trainer
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Uploaded At
@@ -273,7 +273,7 @@ export default function FileManagementTable({
                       {file.uploadedBy.name || file.uploadedBy.email || "Unknown"}
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {file.company?.name || "No Company Assigned"}
+                      {file.company?.name || "No Trainer Assigned"}
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">
                       {formatDate(file.uploadedAt)}
