@@ -4,11 +4,18 @@ import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
 // `prisma generate` does not open a DB connection, but Prisma 7 still evaluates this config
-// and `env("DATABASE_URL")` throws if the variable is missing. Vercel builds often do not inject
-// `DATABASE_URL` until runtime, so use a harmless placeholder when unset (same idea as the Dockerfile).
+// and throws if the variable is missing. Use a harmless placeholder when unset during build.
 const databaseUrl =
    process.env.DATABASE_URL ??
    "postgresql://placeholder:placeholder@127.0.0.1:5432/placeholder?schema=public";
+
+// For migrations, Prisma needs a direct (non-pooled) connection to acquire advisory locks.
+// Neon direct URL is the same as the pooler URL but without "-pooler" in the hostname.
+// Set DIRECT_DATABASE_URL in Vercel env vars to the direct connection string.
+// Falls back to DATABASE_URL if not set (works for local dev).
+const directUrl =
+   process.env.DIRECT_DATABASE_URL ??
+   databaseUrl;
 
 export default defineConfig({
    schema: "prisma/schema.prisma",
@@ -17,7 +24,6 @@ export default defineConfig({
    },
    datasource: {
       url: databaseUrl,
+      directUrl,
    },
 });
-
-
