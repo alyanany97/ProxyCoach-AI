@@ -71,16 +71,11 @@ export const {
       MicrosoftEntraId({
          clientId: requiredEnv("AUTH_MICROSOFT_ENTRA_ID_CLIENT_ID"),
          clientSecret: requiredEnv("AUTH_MICROSOFT_ENTRA_ID_CLIENT_SECRET"),
-         // Use "organizations" to allow any Azure AD tenant (multi-tenant).
-         // Requires the App Registration in Azure Portal to be set to
-         // "Accounts in any organizational directory (Multitenant)".
-         // The issuer in tokens will be tenant-specific; we skip strict
-         // issuer validation here since our signIn callback handles authz.
+         // "organizations" allows users from any Azure AD tenant to sign in.
+         // Access is still controlled by the signIn callback (invitation check + allowed domains).
          authorization: {
             url: "https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize",
-            params: {
-               scope: "openid profile email User.Read",
-            },
+            params: { scope: "openid profile email User.Read" },
          },
          token: "https://login.microsoftonline.com/organizations/oauth2/v2.0/token",
          userinfo: "https://graph.microsoft.com/oidc/userinfo",
