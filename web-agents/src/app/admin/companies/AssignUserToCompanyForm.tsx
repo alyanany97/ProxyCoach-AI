@@ -41,7 +41,7 @@ export function AssignUserToCompanyForm({
     startTransition(async () => {
       try {
         await assignUserToCompany(selectedUserId, companyId);
-        toast.success("User assigned to company successfully");
+        toast.success("Client assigned to trainer successfully");
         setSelectedUserId(undefined);
         router.refresh();
       } catch (error) {
@@ -60,10 +60,10 @@ export function AssignUserToCompanyForm({
       {/* Assign New User */}
       <div>
         <h5 className="mb-2 text-xs font-semibold text-foreground">
-          Assign User to Company
+          Assign Client to Trainer
         </h5>
         {availableUsers.length === 0 ? (
-          <p className="text-xs text-muted-foreground">All users are already assigned to this company</p>
+          <p className="text-xs text-muted-foreground">All clients are already assigned to this trainer</p>
         ) : (
           <form onSubmit={handleAssign} className="flex items-center gap-2">
             <Select

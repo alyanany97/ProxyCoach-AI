@@ -24,14 +24,14 @@ export function DeleteCompanyButton({
 
   async function handleDelete() {
     if (userCount > 0) {
-      toast.error("Cannot delete company with assigned users. Please remove all users first.");
+      toast.error("Cannot delete trainer with assigned clients. Please remove all clients first.");
       return;
     }
 
     startTransition(async () => {
       try {
         await deleteCompany(companyId);
-        toast.success(`Company "${companyName}" deleted successfully`);
+        toast.success(`Trainer "${companyName}" deleted successfully`);
         router.refresh();
       } catch (error) {
         const errorMessage =
@@ -72,7 +72,7 @@ export function DeleteCompanyButton({
       disabled={isPending || userCount > 0}
       variant="destructive"
       size="sm"
-      title={userCount > 0 ? "Remove all users before deleting" : "Delete company"}
+      title={userCount > 0 ? "Remove all clients before deleting" : "Delete trainer profile"}
     >
       Delete
     </Button>

@@ -18,7 +18,7 @@ export function CreateCompanyForm() {
     e.preventDefault();
     
     if (!name.trim()) {
-      toast.error("Please enter a company name");
+      toast.error("Please enter a trainer name");
       return;
     }
 
@@ -28,7 +28,7 @@ export function CreateCompanyForm() {
           name: name.trim(),
           billingEmail: billingEmail.trim() || undefined,
         });
-        toast.success(`Company "${name.trim()}" created successfully`);
+        toast.success(`Trainer "${name.trim()}" created successfully`);
         setName("");
         setBillingEmail("");
         router.refresh();
@@ -44,14 +44,14 @@ export function CreateCompanyForm() {
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
         <Label htmlFor="name" className="block text-xs font-medium text-foreground mb-1">
-          Company Name *
+          Trainer Name *
         </Label>
         <Input
           id="name"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Acme Corp"
+          placeholder="e.g. John Smith — Personal Training"
           disabled={isPending}
           required
         />
@@ -74,7 +74,7 @@ export function CreateCompanyForm() {
         disabled={isPending || !name.trim()}
         className="w-full"
       >
-        {isPending ? "Creating..." : "Create Company"}
+        {isPending ? "Creating..." : "Add Trainer"}
       </Button>
     </form>
   );

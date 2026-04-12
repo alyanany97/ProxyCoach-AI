@@ -61,7 +61,7 @@ export default async function AdminCompaniesPage() {
           File Management
         </h2>
         <p className="mb-4 text-sm text-muted-foreground">
-          View, download, and delete files uploaded by trainers. Select a trainer from the dropdown to filter files.
+          View, download, and delete knowledge base files. Select a trainer profile to filter.
         </p>
         <FileManagementTable
           companies={companies.map((c) => ({ id: c.id, name: c.name }))}

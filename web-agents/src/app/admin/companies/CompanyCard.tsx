@@ -38,7 +38,7 @@ function RemoveUserButton({
     startTransition(async () => {
       try {
         await assignUserToCompany(userId, null);
-        toast.success(`User "${userName}" removed from company successfully`);
+        toast.success(`${userName} removed from trainer successfully`);
         router.refresh();
       } catch (error) {
         const errorMessage =
@@ -55,7 +55,7 @@ function RemoveUserButton({
       onClick={handleRemove}
       disabled={isPending}
       className="h-8 w-8 p-0 text-destructive hover:text-destructive-foreground hover:bg-destructive/10"
-      title="Remove user from company"
+      title="Remove client from trainer"
     >
       {isPending ? (
         <Loader2 className="w-4 h-4 animate-spin" />
@@ -74,7 +74,7 @@ export function CompanyCard({ company, allUsers }: CompanyCardProps) {
       <div className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="bg-muted border-b border-border px-6 py-4">
           <h3 className="text-lg font-semibold text-foreground mb-4">
-            Edit Company
+            Edit Trainer Profile
           </h3>
           <EditCompanyForm
             companyId={company.id}
@@ -98,7 +98,7 @@ export function CompanyCard({ company, allUsers }: CompanyCardProps) {
             </h3>
             {company.billingEmail && (
               <p className="mt-1 text-sm text-muted-foreground">
-                Billing: {company.billingEmail}
+                Contact: {company.billingEmail}
               </p>
             )}
             <p className="mt-1 text-xs text-muted-foreground">
@@ -111,7 +111,7 @@ export function CompanyCard({ company, allUsers }: CompanyCardProps) {
           </div>
           <div className="ml-4 flex items-center gap-3">
             <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-              {company.users.length} {company.users.length === 1 ? "user" : "users"}
+              {company.users.length} {company.users.length === 1 ? "client" : "clients"}
             </span>
             <Button
               onClick={() => setIsEditing(true)}
@@ -134,7 +134,7 @@ export function CompanyCard({ company, allUsers }: CompanyCardProps) {
         {/* Assigned Users Table */}
         <div>
           <h4 className="mb-3 text-sm font-semibold text-foreground">
-            Assigned Users
+            Assigned Clients
           </h4>
           {company.users.length > 0 ? (
             <div className="overflow-x-auto">
@@ -177,7 +177,7 @@ export function CompanyCard({ company, allUsers }: CompanyCardProps) {
               </table>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No users assigned to this company.</p>
+            <p className="text-sm text-muted-foreground">No clients assigned to this trainer yet.</p>
           )}
         </div>
 
