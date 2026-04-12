@@ -34,7 +34,7 @@ export async function getPTDashboard() {
           name: true,
           billingEmail: true,
           createdAt: true,
-          _count: { select: { users: true, uploadedFiles: true } },
+          _count: { select: { uploadedFiles: true } },
         },
       },
     },
@@ -42,7 +42,14 @@ export async function getPTDashboard() {
 
   if (!pt) return { success: false as const, error: "User not found" };
 
-  return { success: true as const, pt };
+  // Count clients in this company excluding the PT themselves
+  const clientCount = pt.companyId
+    ? await prisma.user.count({
+        where: { companyId: pt.companyId, id: { not: session.user.id } },
+      })
+    : 0;
+
+  return { success: true as const, pt, clientCount };
 }
 
 /**

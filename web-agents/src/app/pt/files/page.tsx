@@ -1,12 +1,16 @@
-import { getPTDashboard } from "@/@actions/pt";
+import { getPTDashboard, getPTClients } from "@/@actions/pt";
 import Link from "next/link";
 import FileManagementTable from "@/components/files/FileManagementTable";
 import SignOutButton from "@/components/auth/SignOutButton";
 
 export default async function PTFilesPage() {
-  const result = await getPTDashboard();
+  const [dashResult, clientsResult] = await Promise.all([
+    getPTDashboard(),
+    getPTClients(),
+  ]);
 
-  const company = result.success ? result.pt?.company : null;
+  const company = dashResult.success ? dashResult.pt?.company : null;
+  const clients = clientsResult.success ? clientsResult.clients : [];
 
   return (
     <main className="min-h-screen bg-background">
@@ -42,6 +46,8 @@ export default async function PTFilesPage() {
               companies={[{ id: company.id, name: company.name }]}
               showCompanySelector={false}
               defaultCompanyId={company.id}
+              ptClients={clients}
+              ptCompanyId={company.id}
             />
           </>
         )}

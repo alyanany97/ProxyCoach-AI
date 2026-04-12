@@ -8,6 +8,7 @@ import { Download, Trash2, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import FileUploadButton from "./FileUploadButton";
+import PTFileUploadButton from "./PTFileUploadButton";
 
 interface UploadedFile {
   id: string;
@@ -23,27 +24,50 @@ interface UploadedFile {
     id: string;
     name: string;
   } | null;
+  clientId: string | null;
+  client: {
+    id: string;
+    name: string | null;
+    email: string | null;
+  } | null;
   fileType: string;
   fileName: string;
+}
+
+interface PTClient {
+  id: string;
+  name: string | null;
+  email: string | null;
+}
+
+interface AdminUser {
+  id: string;
+  name: string | null;
+  email: string | null;
+  companyId: string | null;
 }
 
 interface FileManagementTableProps {
   companies: Array<{ id: string; name: string }>;
   showCompanySelector?: boolean;
   defaultCompanyId?: string | null;
+  /** PT mode: provide the PT's own clients and companyId */
+  ptClients?: PTClient[];
+  ptCompanyId?: string;
+  /** Admin mode: provide all users for client-level targeting */
+  allUsers?: AdminUser[];
 }
 
-/**
- * FileManagementTable component
- * 
- * Reusable component for managing uploaded files by company.
- * Supports viewing, downloading, and deleting files.
- */
 export default function FileManagementTable({
   companies,
   showCompanySelector = true,
   defaultCompanyId = null,
+  ptClients,
+  ptCompanyId,
+  allUsers,
 }: FileManagementTableProps) {
+  const isPTMode = ptClients !== undefined && ptCompanyId !== undefined;
+
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>(
     defaultCompanyId || (showCompanySelector ? "all" : companies[0]?.id || "")
   );
@@ -54,7 +78,6 @@ export default function FileManagementTable({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<UploadedFile | null>(null);
 
-  // Fetch files when company selection changes
   useEffect(() => {
     if (selectedCompanyId) {
       fetchFiles();
@@ -66,15 +89,14 @@ export default function FileManagementTable({
     setError(null);
 
     try {
-      // Handle "all" companies case
-      const companyParam = selectedCompanyId === "all" 
-        ? "all" 
+      const companyParam = selectedCompanyId === "all"
+        ? "all"
         : selectedCompanyId === "No_Company_Assigned"
         ? "No_Company_Assigned"
         : selectedCompanyId;
 
       const response = await fetch(`/api/files/company/${companyParam}`);
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to fetch files");
@@ -101,21 +123,18 @@ export default function FileManagementTable({
 
     const fileId = fileToDelete.id;
     const fileName = fileToDelete.fileName;
-    
+
     setDeletingFileId(fileId);
     setError(null);
 
     try {
-      const response = await fetch(`/api/files/${fileId}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(`/api/files/${fileId}`, { method: "DELETE" });
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to delete file");
       }
 
-      // Remove file from list
       setFiles((prev) => prev.filter((file) => file.id !== fileId));
       toast.success(`File "${fileName}" deleted successfully`);
     } catch (error) {
@@ -131,16 +150,13 @@ export default function FileManagementTable({
 
   const handleDownload = async (file: UploadedFile) => {
     try {
-      // Create a hidden anchor element pointing to the proxy download endpoint
-      // The server will stream the file with proper headers to force download
       const link = document.createElement("a");
       link.href = `/api/files/${file.id}/download`;
-      link.download = file.fileName; // Set the download filename
-      link.style.display = "none"; // Hidden - client never sees the blob URL
+      link.download = file.fileName;
+      link.style.display = "none";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       toast.success(`Downloading "${file.fileName}"`);
     } catch (error) {
       console.error("Error downloading file:", error);
@@ -151,8 +167,7 @@ export default function FileManagementTable({
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -161,29 +176,42 @@ export default function FileManagementTable({
     });
   };
 
-  const formatFileType = (fileType: string) => {
-    return fileType.charAt(0).toUpperCase() + fileType.slice(1);
-  };
+  const formatFileType = (fileType: string) =>
+    fileType.charAt(0).toUpperCase() + fileType.slice(1);
 
+  const clientLabel = (file: UploadedFile) => {
+    if (file.client) return file.client.name || file.client.email || "Unknown";
+    return "All Clients";
+  };
 
   return (
     <div className="space-y-4">
-      {/* File Upload Section */}
+      {/* Upload Section */}
       <div className="rounded-lg border border-border bg-card p-4">
-        <h3 className="mb-4 text-sm font-semibold text-foreground">
-          Upload Document
-        </h3>
+        <h3 className="mb-4 text-sm font-semibold text-foreground">Upload Document</h3>
         <p className="mb-4 text-xs text-muted-foreground">
-          Upload a document to be indexed for the selected trainer. The file will be automatically processed and indexed.
+          {isPTMode
+            ? "Upload a document for your clients. Select which agent should use it and who it's visible to."
+            : "Upload a document to be indexed. Select the agent, trainer, and client visibility."}
         </p>
-        <FileUploadButton
-          companies={companies}
-          onUploadSuccess={fetchFiles}
-        />
+
+        {isPTMode ? (
+          <PTFileUploadButton
+            companyId={ptCompanyId!}
+            clients={ptClients!}
+            onUploadSuccess={fetchFiles}
+          />
+        ) : (
+          <FileUploadButton
+            companies={companies}
+            allUsers={allUsers}
+            onUploadSuccess={fetchFiles}
+          />
+        )}
       </div>
 
-      {/* Trainer Selector */}
-      {showCompanySelector && (
+      {/* Trainer Selector (admin only) */}
+      {showCompanySelector && !isPTMode && (
         <div className="flex items-center gap-4">
           <label className="text-sm font-medium text-foreground">
             Select Personal Trainer:
@@ -209,13 +237,11 @@ export default function FileManagementTable({
         </div>
       )}
 
-      {/* Error Display */}
+      {/* Error */}
       {error && (
         <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-medium text-destructive-foreground">{error}</p>
-          </div>
+          <p className="text-sm font-medium text-destructive-foreground">{error}</p>
         </div>
       )}
 
@@ -228,33 +254,22 @@ export default function FileManagementTable({
           </div>
         ) : files.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              No files found for the selected trainer.
-            </p>
+            <p className="text-sm text-muted-foreground">No files found.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-border bg-muted">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    File Name
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Uploaded By
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Trainer
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Uploaded At
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">File Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Uploaded By</th>
+                  {!isPTMode && (
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Trainer</th>
+                  )}
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Visible To</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Uploaded At</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -263,21 +278,27 @@ export default function FileManagementTable({
                     key={file.id}
                     className="border-b border-border hover:bg-accent transition-colors"
                   >
-                    <td className="px-4 py-3 text-sm text-foreground">
-                      {file.fileName}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {formatFileType(file.fileType)}
-                    </td>
+                    <td className="px-4 py-3 text-sm text-foreground">{file.fileName}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{formatFileType(file.fileType)}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">
                       {file.uploadedBy.name || file.uploadedBy.email || "Unknown"}
                     </td>
+                    {!isPTMode && (
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        {file.company?.name || "No Trainer Assigned"}
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {file.company?.name || "No Trainer Assigned"}
+                      <span className={cn(
+                        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                        file.client
+                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                          : "bg-muted text-muted-foreground border border-border"
+                      )}>
+                        {clientLabel(file)}
+                      </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">
-                      {formatDate(file.uploadedAt)}
-                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{formatDate(file.uploadedAt)}</td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button
@@ -313,7 +334,6 @@ export default function FileManagementTable({
         )}
       </div>
 
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}

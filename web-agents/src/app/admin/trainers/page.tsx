@@ -66,6 +66,12 @@ export default async function AdminTrainersPage() {
         <FileManagementTable
           companies={companies.map((c) => ({ id: c.id, name: c.name }))}
           showCompanySelector={true}
+          allUsers={allUsers.map((u) => ({
+            id: u.id,
+            name: u.name ?? null,
+            email: u.email ?? null,
+            companyId: u.companyId ?? null,
+          }))}
         />
       </div>
 

@@ -79,7 +79,8 @@ model User {
    company       Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
    sessions      Session[]
    conversations Conversation[] // User's conversations
-   uploadedFiles UploadedFile[] // Files uploaded by this user
+   uploadedFiles UploadedFile[] @relation("UploadedByUser") // Files uploaded by this user
+   clientFiles   UploadedFile[] @relation("ClientFiles")    // Files targeted at this client
    escalationIncidents EscalationIncident[] // Guardrail escalations
 
    @@index([companyId])
@@ -154,16 +155,19 @@ model UploadedFile {
    uploadedBy    String   @map("uploaded_by") // User ID who uploaded the file
    blobUrl       String   @map("blob_url") // URL in blob pointing to this file
    fileName      String?  @map("file_name") // Original file name for better readability (nullable for existing records)
-   companyId     String?  @map("company_id") // Company ID the user belongs to (nullable)
+   companyId     String?  @map("company_id") // Company (trainer) this file belongs to (nullable = shared)
+   clientId      String?  @map("client_id")  // Optional: specific client this file is visible to (null = all clients of trainer)
    extractedText String?  @map("extracted_text") @db.Text // Extracted text content for immediate access (before Azure AI Search indexing)
 
    // Relationships
-   user    User     @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+   user    User     @relation("UploadedByUser", fields: [uploadedBy], references: [id], onDelete: Cascade)
    company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+   client  User?    @relation("ClientFiles", fields: [clientId], references: [id], onDelete: SetNull)
 
    @@index([companyId])
    @@index([uploadedBy])
    @@index([uploadedAt])
+   @@index([clientId])
 }
 
 // EscalationIncident model - tracks guardrail blocks that require escalation

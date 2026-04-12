@@ -8,7 +8,7 @@ export default async function PTPanelPage() {
   const result = await getPTDashboard();
 
   const company = result.success ? result.pt?.company : null;
-  const clientCount = company?._count?.users ?? 0;
+  const clientCount = result.success ? (result.clientCount ?? 0) : 0;
   const fileCount = company?._count?.uploadedFiles ?? 0;
 
   return (

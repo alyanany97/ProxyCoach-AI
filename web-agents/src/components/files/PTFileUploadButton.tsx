@@ -8,54 +8,42 @@ import { toast } from "sonner";
 import { AGENTS } from "@/constants/agents";
 import { cn } from "@/lib/utils";
 
-interface FileUploadButtonProps {
-  companies: Array<{ id: string; name: string }>;
-  /** All users across companies — used to populate the client selector filtered by trainer */
-  allUsers?: Array<{ id: string; name: string | null; email: string | null; companyId: string | null }>;
+interface PTClient {
+  id: string;
+  name: string | null;
+  email: string | null;
+}
+
+interface PTFileUploadButtonProps {
+  companyId: string;
+  clients: PTClient[];
   onUploadSuccess?: () => void;
   className?: string;
 }
 
 /**
- * Admin file upload button.
- * Selectors: Agent → Trainer → Client (filtered by trainer).
+ * PT-specific file upload button.
+ * Shows agent selector and client selector (PT's own clients only).
+ * Files are automatically scoped to the PT's trainer profile — no trainer selector shown.
  */
-export default function FileUploadButton({
-  companies,
-  allUsers = [],
+export default function PTFileUploadButton({
+  companyId,
+  clients,
   onUploadSuccess,
   className,
-}: FileUploadButtonProps) {
+}: PTFileUploadButtonProps) {
   const [selectedAgentId, setSelectedAgentId] = useState<string>("");
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const isShared = selectedCompanyId === "all-companies";
-
-  // Clients belonging to the selected trainer
-  const clientsForTrainer = selectedCompanyId && !isShared
-    ? allUsers.filter((u) => u.companyId === selectedCompanyId)
-    : [];
-
-  // Reset client when trainer changes
-  const handleCompanyChange = (value: string) => {
-    setSelectedCompanyId(value);
-    setSelectedClientId("");
-  };
 
   const handleUploadClick = () => {
     if (!selectedAgentId) {
       toast.error("Please select an agent");
       return;
     }
-    if (!selectedCompanyId) {
-      toast.error("Please select a trainer");
-      return;
-    }
-    if (!isShared && allUsers.length > 0 && !selectedClientId) {
+    if (!selectedClientId) {
       toast.error("Please select a client");
       return;
     }
@@ -66,7 +54,7 @@ export default function FileUploadButton({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (!selectedAgentId || !selectedCompanyId) return;
+    if (!selectedAgentId || !selectedClientId) return;
 
     setIsUploading(true);
     setError(null);
@@ -80,12 +68,10 @@ export default function FileUploadButton({
       const formData = new FormData();
       formData.append("file", file);
       formData.append("agentId", selectedAgentId);
-      formData.append("isShared", isShared ? "true" : "false");
-      if (!isShared) {
-        formData.append("companyId", selectedCompanyId);
-      }
-      // Send clientId only when a specific client is chosen (not "all-clients")
-      if (!isShared && selectedClientId && selectedClientId !== "all-clients") {
+      // companyId is set server-side from the PT's own profile — we pass it as a hint
+      formData.append("companyId", companyId);
+      // "all-clients" means no specific client (visible to all this trainer's clients)
+      if (selectedClientId !== "all-clients") {
         formData.append("clientId", selectedClientId);
       }
 
@@ -116,14 +102,11 @@ export default function FileUploadButton({
     }
   };
 
-  const isDisabled = isUploading || !selectedAgentId || !selectedCompanyId ||
-    (!isShared && allUsers.length > 0 && !selectedClientId);
-
   return (
     <div className={cn("space-y-4", className)}>
-      <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row gap-4">
         {/* Agent Selector */}
-        <div className="flex-1 min-w-[180px]">
+        <div className="flex-1">
           <label className="mb-2 block text-sm font-medium text-foreground">
             Select Agent:
           </label>
@@ -141,53 +124,30 @@ export default function FileUploadButton({
           </Select>
         </div>
 
-        {/* Trainer Selector */}
-        <div className="flex-1 min-w-[180px]">
+        {/* Client Selector */}
+        <div className="flex-1">
           <label className="mb-2 block text-sm font-medium text-foreground">
-            Select Trainer:
+            Visible to:
           </label>
-          <Select value={selectedCompanyId} onValueChange={handleCompanyChange} disabled={isUploading}>
+          <Select value={selectedClientId} onValueChange={setSelectedClientId} disabled={isUploading}>
             <SelectTrigger>
-              <SelectValue placeholder="Choose a trainer..." />
+              <SelectValue placeholder="Choose a client..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all-companies">All Trainers (Shared)</SelectItem>
-              <SelectItem value="No_Company_Assigned">No Trainer Assigned</SelectItem>
-              {companies.map((company) => (
-                <SelectItem key={company.id} value={company.id}>
-                  {company.name}
+              <SelectItem value="all-clients">All My Clients</SelectItem>
+              {clients.map((client) => (
+                <SelectItem key={client.id} value={client.id}>
+                  {client.name || client.email || client.id}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {isShared && (
+          {selectedClientId === "all-clients" && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Shared files are accessible to all trainers
+              File will be visible to all your clients
             </p>
           )}
         </div>
-
-        {/* Client Selector — only shown when a specific trainer is selected and users exist */}
-        {!isShared && selectedCompanyId && allUsers.length > 0 && (
-          <div className="flex-1 min-w-[180px]">
-            <label className="mb-2 block text-sm font-medium text-foreground">
-              Visible to:
-            </label>
-            <Select value={selectedClientId} onValueChange={setSelectedClientId} disabled={isUploading}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a client..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all-clients">All Clients of this Trainer</SelectItem>
-                {clientsForTrainer.map((client) => (
-                  <SelectItem key={client.id} value={client.id}>
-                    {client.name || client.email || client.id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
       </div>
 
       {error && (
@@ -206,7 +166,11 @@ export default function FileUploadButton({
           accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg,.gif"
           disabled={isUploading}
         />
-        <Button onClick={handleUploadClick} disabled={isDisabled} className="w-full sm:w-auto">
+        <Button
+          onClick={handleUploadClick}
+          disabled={isUploading || !selectedAgentId || !selectedClientId}
+          className="w-full sm:w-auto"
+        >
           {isUploading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

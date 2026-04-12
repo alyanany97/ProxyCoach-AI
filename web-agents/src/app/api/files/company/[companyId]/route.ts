@@ -2,13 +2,13 @@ import { NextRequest } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { ROLES } from "@/constants/roles";
-import { getAgentsContainerClient } from "@/lib/blob-storage";
 
 /**
  * GET /api/files/company/[companyId]
- * Get all files uploaded by a specific company
- * 
- * Requires admin authentication
+ * Get all files for a company/trainer.
+ *
+ * Admin: can query any companyId (including "all" and "No_Company_Assigned").
+ * PT: can only query their own companyId.
  */
 export async function GET(
   req: NextRequest,
@@ -17,66 +17,59 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only admins can view company files
-    if (session.user.role !== ROLES.ADMIN) {
-      return new Response(
-        JSON.stringify({ error: "Forbidden: Only admins can view company files" }),
-        {
-          status: 403,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
+    const isAdmin = session.user.role === ROLES.ADMIN;
+    const isPT = session.user.role === ROLES.PT;
+
+    if (!isAdmin && !isPT) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { companyId } = await params;
 
-    // Handle "all" or null company ID (for viewing all files)
-    const whereClause = companyId === "all" || companyId === "null"
-      ? {}
-      : companyId === "No_Company_Assigned"
-      ? { companyId: null }
-      : { companyId };
+    // PT can only access their own company's files
+    if (isPT) {
+      const pt = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { companyId: true },
+      });
+      if (!pt?.companyId || pt.companyId !== companyId) {
+        return Response.json({ error: "Forbidden: You can only view your own trainer files" }, { status: 403 });
+      }
+    }
+
+    const whereClause =
+      companyId === "all" || companyId === "null"
+        ? {}
+        : companyId === "No_Company_Assigned"
+        ? { companyId: null }
+        : { companyId };
 
     const files = await prisma.uploadedFile.findMany({
       where: whereClause,
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: { id: true, name: true, email: true },
         },
         company: {
-          select: {
-            id: true,
-            name: true,
-          },
+          select: { id: true, name: true },
+        },
+        client: {
+          select: { id: true, name: true, email: true },
         },
       },
-      orderBy: {
-        uploadedAt: "desc",
-      },
+      orderBy: { uploadedAt: "desc" },
     });
 
-    // Extract file type from URL path (fileName is now stored in database)
     const filesWithMetadata = files.map((file) => {
-      // Extract file type from blob path: agents/{company_id}/{file_type}/{fileId}
       let fileType = "unknown";
       if (file.blobUrl.includes("/agents/")) {
         const pathParts = file.blobUrl.split("/");
-        const agentsIndex = pathParts.findIndex(part => part === "agents");
+        const agentsIndex = pathParts.findIndex((part) => part === "agents");
         if (agentsIndex !== -1 && pathParts.length > agentsIndex + 3) {
-          fileType = pathParts[agentsIndex + 2]; // file_type is after company_id
+          fileType = pathParts[agentsIndex + 2];
         }
       }
 
@@ -90,26 +83,26 @@ export async function GET(
         },
         blobUrl: file.blobUrl,
         companyId: file.companyId,
-        company: file.company ? {
-          id: file.company.id,
-          name: file.company.name,
-        } : null,
+        company: file.company ? { id: file.company.id, name: file.company.name } : null,
+        clientId: (file as any).clientId ?? null,
+        client: (file as any).client
+          ? {
+              id: (file as any).client.id,
+              name: (file as any).client.name,
+              email: (file as any).client.email,
+            }
+          : null,
         fileType,
-        fileName: (file as any).fileName || `File-${file.id.substring(0, 8)}`, // Use stored fileName or fallback for old records
+        fileName: (file as any).fileName || `File-${file.id.substring(0, 8)}`,
       };
     });
 
     return Response.json({ files: filesWithMetadata });
   } catch (error) {
     console.error("Error fetching company files:", error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Failed to fetch files",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Failed to fetch files" },
+      { status: 500 }
     );
   }
 }

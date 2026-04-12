@@ -66,6 +66,7 @@ export async function getAllUsers() {
         email: true,
         image: true,
         role: true,
+        companyId: true,
         emailVerified: true,
         createdAt: true,
         updatedAt: true,
