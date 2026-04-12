@@ -10,7 +10,8 @@
     "build": "npx prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
-    "vercel-build": "prisma generate && node scripts/migrate-deploy.js && next build"
+    "vercel-build": "prisma generate && next build",
+    "migrate": "node scripts/migrate-deploy.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
