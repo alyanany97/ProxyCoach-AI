@@ -3,6 +3,7 @@ import MicrosoftEntraId from "next-auth/providers/azure-ad";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 
 import { prisma } from "@/lib/prisma";
+import { ROLES } from "@/constants/roles";
 import { checkInvitation, acceptInvitation } from "@/@actions/admin/invitations";
 import { assignUserToAppByEmail } from "@/lib/microsoft-graph";
 
